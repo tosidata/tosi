@@ -8,3 +8,4 @@
 ^_pkgdown\.yml$
 ^docs$
 ^tests/testthat/fixtures/README\.md$
+^\.github$
