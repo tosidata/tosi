@@ -1,0 +1,1 @@
+{"operation":"tosi_data","args":{"path":"statfin/adopt_11lv_px","source_filter":null,"aggregation":{"empty":[],"singleton":["sum"],"multiple":["sum","mean"],"nested":{"codes":["A"],"missing":null}},"lang":"en","col_mode":"ids","format":"tbl"}}

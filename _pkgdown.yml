@@ -1,0 +1,36 @@
+template:
+  bootstrap: 5
+
+examples:
+  run: false
+
+reference:
+  - title: Find and retrieve tables
+    contents:
+      - remote_frontends
+      - tosi_help
+      - tosi_options
+  - title: Inspect table metadata and structure
+    contents:
+      - tosi_metadata
+  - title: Work with tables and provenance
+    contents:
+      - is_tosi_table
+      - provenance
+  - title: Response objects
+    contents:
+      - TosiHelp
+      - TosiMetadata
+      - TosiSchema
+      - TosiProvenance
+      - TosiSourceReference
+      - TosiSourceDocument
+      - TosiIndexDocument
+  - title: Identifiers and frequency codes
+    contents:
+      - id-vectors
+      - object_path
+      - new_frequency_code
+  - title: Search indexing
+    contents:
+      - tosi_index_document

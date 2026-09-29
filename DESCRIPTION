@@ -1,0 +1,39 @@
+Package: tosi
+Title: R Client for the Hosted TosiData Service
+Version: 0.1.0
+Authors@R: person("Juha", "Itkonen", , "juha@tosidata.com", role = c("aut", "cre"))
+Description: Provides a remote-only client for the hosted TosiData service.
+    Authenticated, blocking requests display incremental feedback and return
+    complete shared R tables, result models, discovery values, versions, and
+    help. No private platform package or local execution backend is required.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Roxygen: list(markdown = TRUE)
+Imports:
+    cli,
+    curl,
+    forcats,
+    glue,
+    httr2 (>= 1.2.0),
+    jsonlite (>= 1.6),
+    lifecycle,
+    lubridate,
+    pillar,
+    purrr,
+    qs2,
+    R6,
+    rlang,
+    stringi,
+    stringr,
+    tibble,
+    vctrs
+Suggests:
+    commonmark,
+    testthat (>= 3.2.0),
+    withr
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
+URL: https://github.com/tosidata/tosi
+BugReports: https://github.com/tosidata/tosi/issues

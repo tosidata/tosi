@@ -1,0 +1,10 @@
+^LICENSE\.md$
+^records(/|$)
+^AGENTS\.md$
+^\.agents(/|$)
+^README\.Rmd$
+^\.Renviron$
+^dev\.R$
+^_pkgdown\.yml$
+^docs$
+^tests/testthat/fixtures/README\.md$

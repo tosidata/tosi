@@ -1,0 +1,103 @@
+---
+output:
+  github_document:
+    html_preview: false
+params:
+  run_examples: true
+---
+
+```{r setup, include=FALSE}
+# Normal:  rmarkdown::render("README.Rmd")
+# Preview: rmarkdown::render("README.Rmd", params = list(run_examples = FALSE))
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+options(tibble.print_max = 5, tibble.width = 75)
+
+```
+
+```{r local-server, include=FALSE, eval=params$run_examples}
+server <- callr::r_bg(function() {
+  Sys.setenv(TOSI_SERVER_TOKEN = "readme"); tosi.server::run_server()
+})
+knitr::knit_hooks$set(after.knit = function() server$kill_tree())
+tosi::tosi_options(url = "http://127.0.0.1:8788", token = "readme")
+```
+
+# tosi
+
+TosiData makes open data easy to find and use in research, analysis,
+and reporting. The `tosi` R package lets you retrieve data from multiple sources
+in a consistent format and refresh your analysis as new figures become available.
+
+- **Data from many sources.** Access Eurostat, OECD, the ECB, FRED, and national statistical offices through the same simple commands.
+- **Ready for analysis.** Get consistently formatted tables you can use directly with dplyr, ggplot2, and other R tools.
+- **Designed to save time.** Retrieve data quickly using source IDs or URLs, through the same simple interface.
+- **Keep your analysis up to date.** Automatically refresh your results, charts, and reports with new data when you rerun your code.
+- **High-fidelity data.** Data stays faithful to its source, retaining the labels, metadata, and version information you need to interpret and verify it.
+
+## How it works
+
+`tosi()` is a multipurpose helper for browsing sources, finding tables, and
+retrieving data.
+
+### List connectors:
+
+```{r connectors, eval=params$run_examples}
+library(tosi)
+tosi()
+```
+
+### List tables provided by a connector:
+
+```{r browse, eval=params$run_examples}
+tosi("eurostat")  # alternatively: tosi_catalog("eurostat")
+```
+
+### Retrieve data:
+
+```{r data, eval=params$run_examples}
+tosi("eurostat/tps00001") # Alternatively: tosi_data("eurostat/tps00001")
+```
+
+### Search for tables:
+
+```{r search, eval=params$run_examples}
+tosi("internet use") # Alternatively: tosi_search("internet use")
+```
+
+### Inspect a table's version and structure:
+
+```{r table-info, eval=FALSE}
+path <- "eurostat/tps00001"
+tosi_data_version(path)
+tosi_schema(path)
+```
+
+## Install
+
+Install the development version from GitHub:
+
+```{r install, eval=FALSE}
+# install.packages("pak")
+pak::pak("tosidata/tosi")
+```
+
+## Configure
+
+TosiData is currently available by invitation. To discuss access for your
+organization, contact [contact@tosidata.com](mailto:contact@tosidata.com).
+
+Connect using your service URL and access token:
+
+```{r configure, eval=FALSE}
+tosi_options(
+  url = "https://service.example.invalid",
+  token = "<your-access-token>"
+)
+```
+
+For additional settings, see `?tosi_options`.
+
+## Learn more
+
+For arguments and result details, see the `tosi()` function reference.
+For questions or problems, use the [issue tracker](https://github.com/tosidata/tosi/issues).
