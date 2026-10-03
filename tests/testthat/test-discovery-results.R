@@ -83,7 +83,7 @@ test_that("empty discovery results print guidance without a table", {
   cases <- list(
     list(
       result = new_tosi_search_results(tibble::tibble()),
-      output = c("No matching datasets found.", "Try broader search terms.")
+      output = "! No matching datasets found. Try broader search terms."
     ),
     list(
       result = new_tosi_dataset_catalog(tibble::tibble(
@@ -92,8 +92,8 @@ test_that("empty discovery results print guidance without a table", {
         object_type = character(),
         language = character()
       )),
-      output = c(
-        "No datasets found in this catalog.",
+      output = paste(
+        "! No datasets found in this catalog.",
         "Try a shorter path or browse the connector."
       )
     )
@@ -102,7 +102,7 @@ test_that("empty discovery results print guidance without a table", {
   for (case in cases) {
     before <- case$result
     output <- capture.output(printed <- withVisible(print(case$result)))
-    expect_identical(output, case$output)
+    expect_identical(cli::ansi_strip(output), case$output)
     expect_false(printed$visible)
     expect_identical(printed$value, before)
     expect_identical(case$result, before)

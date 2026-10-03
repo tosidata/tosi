@@ -38,8 +38,11 @@ print.tosi_dataset_catalog <- function(x, ...) {
   if (nrow(x) > 0L) {
     return(NextMethod())
   }
-  cat("No datasets found in this catalog.\n")
-  cat("Try a shorter path or browse the connector.\n")
+  cat_line(
+    col_yellow("! "),
+    col_cyan(style_bold("No datasets found in this catalog. ")),
+    style_dim("Try a shorter path or browse the connector.")
+  )
   invisible(x)
 }
 
@@ -48,8 +51,11 @@ print.tosi_search_results <- function(x, ...) {
   if (nrow(x) > 0L) {
     return(NextMethod())
   }
-  cat("No matching datasets found.\n")
-  cat("Try broader search terms.\n")
+  cat_line(
+    col_yellow("! "),
+    col_cyan(style_bold("No matching datasets found. ")),
+    style_dim("Try broader search terms.")
+  )
   invisible(x)
 }
 
