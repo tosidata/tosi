@@ -1,3 +1,105 @@
+test_that("exact-ID lookup and domain inspection preserve schema state", {
+  dates <- as.Date(c("2021-01-01", "2020-01-01"))
+  frequencies <- frequency_code(c("W2", "A", NA))
+  components <- list(
+    TosiSchemaComponent$new("unclassified", domain_codes = c("z", "a")),
+    TosiSchemaDimension$new(
+      "region",
+      label = "Region",
+      domain_codes = c("SE", "FI"),
+      domain_labels = c("Sweden", "Finland")
+    ),
+    TosiSchemaTime$new(time_domain = dates),
+    TosiSchemaFrequency$new(frequency_domain = frequencies),
+    TosiSchemaValue$new(unit = "persons"),
+    TosiSchemaAttribute$new("status", domain_codes = c("P", "F"))
+  )
+  schema <- TosiSchema$new(
+    connector_id = "mock",
+    object_id = "inspection",
+    data_version = as.POSIXct("2025-01-01", tz = "UTC"),
+    components = components,
+    lang = "en"
+  )
+  original <- schema$as_list()
+  original_names <- schema$column_names()
+  expected <- list(
+    tibble::tibble(code = c("z", "a")),
+    tibble::tibble(code = c("SE", "FI"), label = c("Sweden", "Finland")),
+    tibble::tibble(time = dates),
+    tibble::tibble(frequency = frequencies),
+    NULL,
+    tibble::tibble(code = c("P", "F"))
+  )
+
+  walk2(components, expected, function(component, domain) {
+    expect_identical(schema$component(component$id), component)
+    expect_identical(component$domain_table(), domain)
+    expect_identical(schema$domain_table(component$id), domain)
+  })
+  expect_error(schema$component("Region"), "Unknown.*Region")
+  expect_error(schema$component("reg"), "Unknown.*reg")
+  expect_error(schema$component("dimension"), "Unknown.*dimension")
+  expect_error(schema$domain_table("missing"), "Unknown.*missing")
+
+  named_schema <- TosiSchema$new(
+    connector_id = "mock",
+    object_id = "named_inspection",
+    data_version = schema$data_version,
+    lang = "en",
+    components = list(alias = components[[2L]])
+  )
+  expect_identical(named_schema$component("region"), components[[2L]])
+  expect_error(named_schema$component("alias"), "Unknown.*alias")
+
+  extracted <- schema$domain_table("region")
+  extracted$code[[1L]] <- "changed"
+  expect_identical(schema$as_list(), original)
+  expect_identical(schema$column_names(), original_names)
+  expect_identical(schema$components, components)
+  region <- schema$component("region")
+  expect_error(region$label <- "Changed", "read-only")
+  expect_identical(schema$clone()$component("region"), components[[2L]])
+  expect_identical(
+    schema$clone(deep = TRUE)$component("region"),
+    components[[2L]]
+  )
+})
+
+test_that("domain inspection distinguishes absent and typed empty domains", {
+  absent <- list(
+    TosiSchemaComponent$new("unclassified"),
+    TosiSchemaDimension$new("region"),
+    TosiSchemaTime$new(),
+    TosiSchemaFrequency$new(),
+    TosiSchemaValue$new(),
+    TosiSchemaAttribute$new("status")
+  )
+  walk(absent, function(component) expect_null(component$domain_table()))
+
+  empty <- list(
+    TosiSchemaComponent$new("unclassified", domain_codes = character()),
+    TosiSchemaDimension$new(
+      "region",
+      domain_codes = character(),
+      domain_labels = character()
+    ),
+    TosiSchemaTime$new(time_domain = as.Date(character())),
+    TosiSchemaFrequency$new(frequency_domain = frequency_code(character())),
+    TosiSchemaAttribute$new("status", domain_codes = character())
+  )
+  expected <- list(
+    tibble::tibble(code = character()),
+    tibble::tibble(code = character(), label = character()),
+    tibble::tibble(time = as.Date(character())),
+    tibble::tibble(frequency = frequency_code(character())),
+    tibble::tibble(code = character())
+  )
+  walk2(empty, expected, function(component, domain) {
+    expect_identical(component$domain_table(), domain)
+  })
+})
+
 test_that("TosiSchema preserves identity and an ordered semantic graph", {
   data_version <- as.POSIXct("2025-01-02 03:04:05", tz = "UTC")
   time_domain <- as.Date(c("2020-01-01", "2021-01-01"))

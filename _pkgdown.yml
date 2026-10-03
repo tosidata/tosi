@@ -6,6 +6,11 @@ template:
 examples:
   run: false
 
+articles:
+  - title: Get started
+    contents:
+      - starts_with("articles/getting-started")
+
 reference:
   - title: Find and retrieve tables
     contents:

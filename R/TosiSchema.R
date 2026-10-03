@@ -1,3 +1,9 @@
+# Domain size is display-only; extraction remains an ordinary typed tibble.
+schema_domain_size <- function(component) {
+  domain <- component$domain_table()
+  if (is.null(domain)) "not recorded" else as.character(nrow(domain))
+}
+
 #' Schema component
 #'
 #' `TosiSchemaComponent` describes one physical user-data column whose semantic
@@ -74,6 +80,43 @@ TosiSchemaComponent <- R6Class(
       private$.role <- "unknown"
       private$.data_type <- data_type
       private$.domain <- domain
+    },
+
+    print = function(n = 3) {
+      cat("<", class(self)[1], "> ", self$id, ": ", self$label, "\n", sep = "")
+      cat(
+        "  role: ",
+        self$role,
+        "; data_type: ",
+        self$data_type %||% "not recorded",
+        "\n",
+        sep = ""
+      )
+      facts <- self$as_list()
+      for (field in c("replaces_id", "unit", "level")) {
+        if (!is.null(facts[[field]])) {
+          cat("  ", field, ": ", facts[[field]], "\n", sep = "")
+        }
+      }
+      if (self$role == "attribute") {
+        cat("  Domain: ", schema_domain_size(self), "\n", sep = "")
+      } else if (self$role != "value") {
+        domain <- self$domain_table()
+        if (is.null(domain)) {
+          cat("  Domain: not recorded\n")
+        } else {
+          base::print(domain, n = n)
+        }
+      }
+      invisible(self)
+    },
+
+    domain_table = function() {
+      domain <- self$domain
+      if (is.null(domain) || all(map_lgl(domain, is.null))) {
+        return(NULL)
+      }
+      tibble::as_tibble(domain)
     },
 
     as_list = function() {
@@ -365,6 +408,30 @@ TosiSchemaAttribute <- R6Class(
 #' series-key information. Fields are read-only; direct and nested replacement
 #' fails. Use `$column_names()` to see the physical names for each column mode.
 #'
+#' Use `schema$component(id)` to obtain the existing component by its exact ID,
+#' and `schema$domain_table(id)` to inspect its complete domain. Every component
+#' also provides `component$domain_table()` with the same return contract.
+#' These methods preserve source order and vector types. Code domains contain
+#' `code` and, only when supplied, `label`; Time and Frequency domains contain
+#' `time` and `frequency`, respectively, retaining native Date and frequency
+#' values. An unrecorded domain returns `NULL` (including Value); a recorded
+#' empty domain returns a typed zero-row tibble. Domain inspection does not
+#' translate values into source filters; filter conventions are source-specific.
+#' Use `print(schema)` or `schema$print()` for a compact overview without domain
+#' values. Dimensions, Time, Frequency and unknown roles are shown together;
+#' Attributes and Value are summarized separately. Relative order within each
+#' group is preserved; the stored component order is unchanged. Domain sizes
+#' distinguish unrecorded from recorded empty domains. Each component supports
+#' `print(component)` and `component$print(n = 3)` for focused inspection. The
+#' per-call `n` bounds domain rows for Dimensions, Time, Frequency and unknown
+#' roles. Attributes show metadata and domain size only; Value shows its unit
+#' when recorded. Printing returns the same object invisibly without mutation.
+#' `$domain_table()` extracts the complete domain regardless of display limits.
+#' Display truncation and omission markers are not literal source-filter values.
+#' Use `str(schema)` or `str(component)` for structural R6 inspection, including
+#' fields and method signatures, rather than the interactive overview.
+#' Component constructors are technical exports, not an extension interface.
+#'
 #' @field connector_id Scalar canonical connector ID vector.
 #' @field object_id Scalar canonical object ID vector.
 #' @field data_version Finite non-missing scalar `POSIXct` version.
@@ -547,6 +614,98 @@ TosiSchema <- R6Class(
       private$.components <- components
       private$.frequency <- frequency
       private$.series_key <- resolved_series_key
+    },
+
+    #' @description
+    #' Print a compact role-grouped overview of every component, without
+    #' domain values or changing stored component order.
+    #'
+    #' @return This schema object, invisibly and without mutation.
+    print = function() {
+      cat(
+        "<TosiSchema> ",
+        as.character(self$connector_id),
+        "/",
+        as.character(self$object_id),
+        " (",
+        self$lang,
+        ")\n",
+        sep = ""
+      )
+      if (!is.null(self$object_type)) {
+        cat("  object_type: ", self$object_type, "\n", sep = "")
+      }
+      cat(
+        "  data_version: ",
+        format(self$data_version, usetz = TRUE),
+        "\n",
+        sep = ""
+      )
+      if (!is.null(self$frequency)) {
+        cat("  frequency: ", as.character(self$frequency), "\n", sep = "")
+      }
+      overview <- keep(self$components, \(x) {
+        !x$role %in% c("attribute", "value")
+      })
+      if (length(overview)) {
+        table <- tibble::tibble(
+          ID = map_chr(overview, "id"),
+          role = map_chr(overview, "role"),
+          domain = map_chr(overview, schema_domain_size),
+          label = map_chr(overview, "label")
+        )
+        base::print(table, n = Inf, width = getOption("width"))
+      }
+      values <- keep(self$components, \(x) x$role == "value")
+      walk(values, \(x) {
+        cat(
+          "Value: ",
+          x$id,
+          if (!is.null(x$unit)) paste0("; unit: ", x$unit),
+          "\n",
+          sep = ""
+        )
+      })
+      attributes <- keep(self$components, \(x) x$role == "attribute")
+      if (length(attributes)) {
+        cat("Attributes:\n")
+        table <- tibble::tibble(
+          ID = map_chr(attributes, "id"),
+          domain = map_chr(attributes, schema_domain_size),
+          label = map_chr(attributes, "label"),
+          type = map_chr(attributes, \(x) x$data_type %||% "not recorded"),
+          level = map_chr(attributes, \(x) x$level %||% "not recorded")
+        )
+        base::print(table, n = Inf, width = getOption("width"))
+      }
+      invisible(self)
+    },
+
+    #' @description
+    #' Look up a component by its exact ID, not a list name, label, role or
+    #' position. An unknown ID raises a lookup error.
+    #'
+    #' @param id Exact component ID.
+    #' @return The existing schema component object, without cloning.
+    component = function(id) {
+      index <- match(id, map_chr(self$components, "id"))
+      if (is.na(index)) {
+        cli_abort("Unknown schema component ID {.val {id}}.")
+      }
+      self$components[[index]]
+    },
+
+    #' @description
+    #' Return a component's complete domain by delegating to its
+    #' `$domain_table()` method. An unknown ID raises a lookup error.
+    #'
+    #' @param id Exact component ID.
+    #' @return A tibble in source order with `code` and optional `label`,
+    #'   `time`, or `frequency` columns, preserving vector types. Returns
+    #'   `NULL` for an unrecorded domain, or a typed zero-row tibble for a
+    #'   recorded empty domain.
+    domain_table = function(id) {
+      self$component(id)$domain_table()
     },
 
     #' @description

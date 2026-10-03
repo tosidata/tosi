@@ -9,6 +9,30 @@ its ordered columns, identifiers, labels, roles, and available value domains.
 It also includes the source version, language, and any frequency and
 series-key information. Fields are read-only; direct and nested replacement
 fails. Use \verb{$column_names()} to see the physical names for each column mode.
+
+Use \code{schema$component(id)} to obtain the existing component by its exact ID,
+and \code{schema$domain_table(id)} to inspect its complete domain. Every component
+also provides \code{component$domain_table()} with the same return contract.
+These methods preserve source order and vector types. Code domains contain
+\code{code} and, only when supplied, \code{label}; Time and Frequency domains contain
+\code{time} and \code{frequency}, respectively, retaining native Date and frequency
+values. An unrecorded domain returns \code{NULL} (including Value); a recorded
+empty domain returns a typed zero-row tibble. Domain inspection does not
+translate values into source filters; filter conventions are source-specific.
+Use \code{print(schema)} or \code{schema$print()} for a compact overview without domain
+values. Dimensions, Time, Frequency and unknown roles are shown together;
+Attributes and Value are summarized separately. Relative order within each
+group is preserved; the stored component order is unchanged. Domain sizes
+distinguish unrecorded from recorded empty domains. Each component supports
+\code{print(component)} and \code{component$print(n = 3)} for focused inspection. The
+per-call \code{n} bounds domain rows for Dimensions, Time, Frequency and unknown
+roles. Attributes show metadata and domain size only; Value shows its unit
+when recorded. Printing returns the same object invisibly without mutation.
+\verb{$domain_table()} extracts the complete domain regardless of display limits.
+Display truncation and omission markers are not literal source-filter values.
+Use \code{str(schema)} or \code{str(component)} for structural R6 inspection, including
+fields and method signatures, rather than the interactive overview.
+Component constructors are technical exports, not an extension interface.
 }
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
@@ -35,6 +59,9 @@ fails. Use \verb{$column_names()} to see the physical names for each column mode
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-TosiSchema-initialize}{\code{TosiSchema$new()}}
+    \item \href{#method-TosiSchema-print}{\code{TosiSchema$print()}}
+    \item \href{#method-TosiSchema-component}{\code{TosiSchema$component()}}
+    \item \href{#method-TosiSchema-domain_table}{\code{TosiSchema$domain_table()}}
     \item \href{#method-TosiSchema-column_names}{\code{TosiSchema$column_names()}}
     \item \href{#method-TosiSchema-as_list}{\code{TosiSchema$as_list()}}
     \item \href{#method-TosiSchema-clone}{\code{TosiSchema$clone()}}
@@ -78,6 +105,71 @@ series-key component IDs.}
   }
   \subsection{Returns}{
     A new \code{TosiSchema} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiSchema-print"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiSchema-print}{}}}
+\subsection{\code{TosiSchema$print()}}{
+  Print a compact role-grouped overview of every component, without
+domain values or changing stored component order.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiSchema$print()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    This schema object, invisibly and without mutation.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiSchema-component"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiSchema-component}{}}}
+\subsection{\code{TosiSchema$component()}}{
+  Look up a component by its exact ID, not a list name, label, role or
+position. An unknown ID raises a lookup error.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiSchema$component(id)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{id}}{Exact component ID.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The existing schema component object, without cloning.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiSchema-domain_table"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiSchema-domain_table}{}}}
+\subsection{\code{TosiSchema$domain_table()}}{
+  Return a component's complete domain by delegating to its
+\verb{$domain_table()} method. An unknown ID raises a lookup error.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiSchema$domain_table(id)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{id}}{Exact component ID.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A tibble in source order with \code{code} and optional \code{label},
+\code{time}, or \code{frequency} columns, preserving vector types. Returns
+\code{NULL} for an unrecorded domain, or a typed zero-row tibble for a
+recorded empty domain.
   }
 }
 
