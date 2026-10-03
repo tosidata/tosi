@@ -39,6 +39,71 @@ test_that("tosi_table is an ordinary tibble carrier", {
   ordinary <- tibble::as_tibble(table)
   expect_false(is_tosi_table(ordinary))
   expect_equal(ordinary, data, ignore_attr = TRUE)
+  expect_identical(tibble::as_tibble(table, drop_replaced = TRUE), ordinary)
+  expected <- table
+  class(expected) <- class(data)
+  expect_identical(ordinary, tibble::as_tibble(expected))
+  expect_identical(
+    tibble::as_tibble(table, .name_repair = toupper, rownames = "row"),
+    tibble::as_tibble(expected, .name_repair = toupper, rownames = "row")
+  )
+})
+
+test_that("opt-in conversion drops only delivered replacement columns", {
+  schema <- TosiSchema$new(
+    connector_id = "statfin",
+    object_id = "test_table",
+    data_version = as.POSIXct("2024-01-01", tz = "UTC"),
+    components = list(
+      TosiSchemaAttribute$new("undelivered", label = "Shared name"),
+      TosiSchemaDimension$new("FREQ", label = "Shared name"),
+      TosiSchemaDimension$new("TIME_PERIOD", label = "Time"),
+      TosiSchemaDimension$new("geo", label = "Shared name"),
+      TosiSchemaFrequency$new(label = "Shared name", replaces_id = "FREQ"),
+      TosiSchemaTime$new(replaces_id = "TIME_PERIOD"),
+      TosiSchemaValue$new(),
+      TosiSchemaAttribute$new("flag", label = "Shared name")
+    ),
+    object_type = "table",
+    lang = "en"
+  )
+  data <- tibble::tibble(
+    FREQ = c("Quarterly", "Quarterly"),
+    TIME_PERIOD = c("2024-Q1", "2024-Q2"),
+    geo = factor(c("FI", "SE")),
+    freq = factor(c("Q", "Q")),
+    time = as.Date(c("2024-01-01", "2024-04-01")),
+    value = c(1L, NA_integer_),
+    flag = c(NA_character_, "provisional")
+  )
+  schema_before <- schema$as_list()
+  for (mode in c("ids", "labels", "safe_labels")) {
+    physical <- schema$column_names(mode)
+    named <- data
+    names(named) <- unname(physical[names(data)])
+    table <- new_tosi_table(named, schema, mode, result_scope = "preview")
+    before <- serialize(table, NULL)
+    ordinary <- tibble::as_tibble(table)
+    expect_identical(names(ordinary), names(named))
+    expect_equal(ordinary, named, ignore_attr = TRUE)
+    keep <- !names(ordinary) %in% physical[c("FREQ", "TIME_PERIOD")]
+
+    expect_no_condition(
+      converted <- tibble::as_tibble(table, drop_replaced = TRUE)
+    )
+    expect_identical(converted, ordinary[keep])
+    expect_false(is_tosi_table(converted))
+    expect_identical(attr(converted, "schema"), schema)
+    expect_identical(serialize(table, NULL), before)
+    expect_identical(schema$as_list(), schema_before)
+
+    # A replaced source column need not be physically delivered.
+    narrower <- table[!names(table) %in% physical[["FREQ"]]]
+    expect_identical(
+      tibble::as_tibble(narrower, drop_replaced = TRUE),
+      converted
+    )
+  }
 })
 
 test_that("tosi_table enforces result scope at construction", {

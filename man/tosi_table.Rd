@@ -2,15 +2,28 @@
 % Please edit documentation in R/tosi-table.R
 \name{is_tosi_table}
 \alias{is_tosi_table}
+\alias{as_tibble.tosi_table}
 \title{Retrieved tables}
 \usage{
 is_tosi_table(x)
+
+\method{as_tibble}{tosi_table}(x, ..., drop_replaced = FALSE)
 }
 \arguments{
 \item{x}{Any R object.}
+
+\item{...}{Arguments passed to \code{\link[tibble:as_tibble]{tibble::as_tibble()}}.}
+
+\item{drop_replaced}{If \code{TRUE}, omit delivered source columns identified by
+schema components' \code{replaces_id}. Names are derived from the complete
+embedded schema using the table's stored column mode.}
 }
 \value{
 \code{TRUE} if \code{x} inherits from \code{"tosi_table"}, \code{FALSE} otherwise.
+
+\code{as_tibble()} returns an ordinary tibble. Conversion retains ordinary
+tibble metadata behavior; the schema is not reduced or rebuilt, and no
+metadata guarantee is made after conversion.
 }
 \description{
 A \code{tosi_table} is a tibble with a schema, title, source label, provenance,

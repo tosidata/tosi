@@ -101,6 +101,31 @@ new_tosi_table <- function(
 is_tosi_table <- function(x) inherits(x, "tosi_table")
 
 
+## -- Tibble conversion --------------------------------------------------------
+
+#' @param ... Arguments passed to [tibble::as_tibble()].
+#' @param drop_replaced If `TRUE`, omit delivered source columns identified by
+#'   schema components' `replaces_id`. Names are derived from the complete
+#'   embedded schema using the table's stored column mode.
+#' @return `as_tibble()` returns an ordinary tibble. Conversion retains ordinary
+#'   tibble metadata behavior; the schema is not reduced or rebuilt, and no
+#'   metadata guarantee is made after conversion.
+#' @rdname tosi_table
+#' @export
+#' @importFrom tibble as_tibble
+as_tibble.tosi_table <- function(x, ..., drop_replaced = FALSE) {
+  if (drop_replaced) {
+    schema <- attr(x, "schema", exact = TRUE)
+    column_names <- schema$column_names(attr(x, "col_mode", exact = TRUE))
+    replaced_ids <- unlist(
+      map(schema$components, \(component) component$replaces_id),
+      use.names = FALSE
+    )
+    x <- x[!names(x) %in% unname(column_names[replaced_ids])]
+  }
+  NextMethod()
+}
+
 ## -- Print method -------------------------------------------------------------
 
 #' @importFrom pillar tbl_sum

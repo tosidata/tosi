@@ -6,6 +6,7 @@ S3method("provenance<-",tosi_table)
 S3method(as.character,tosi_connector_id)
 S3method(as.character,tosi_object_id)
 S3method(as.character,tosi_object_path)
+S3method(as_tibble,tosi_table)
 S3method(connector_id,default)
 S3method(connector_id,tosi_object_path)
 S3method(format,tosi_connector_id)
@@ -132,3 +133,4 @@ importFrom(rlang,
   caller_env,
   is_installed
 )
+importFrom(tibble,as_tibble)
