@@ -5,7 +5,8 @@
 #' These technical constructors attach a result-kind marker class to an
 #' ordinary tibble. The resulting connector catalogs, dataset catalogs, and
 #' search results retain ordinary tibble dimensions, truncation, and
-#' subsetting while printing a concise identifying header.
+#' subsetting while printing a concise identifying header. Empty dataset
+#' catalogs and search results print guidance instead of an empty table.
 #'
 #' @param x A tibble-like discovery result.
 #'
@@ -30,6 +31,26 @@ new_tosi_dataset_catalog <- function(x) {
 #' @export
 new_tosi_search_results <- function(x) {
   tibble::new_tibble(x, class = "tosi_search_results")
+}
+
+#' @export
+print.tosi_dataset_catalog <- function(x, ...) {
+  if (nrow(x) > 0L) {
+    return(NextMethod())
+  }
+  cat("No datasets found in this catalog.\n")
+  cat("Try a shorter path or browse the connector.\n")
+  invisible(x)
+}
+
+#' @export
+print.tosi_search_results <- function(x, ...) {
+  if (nrow(x) > 0L) {
+    return(NextMethod())
+  }
+  cat("No matching datasets found.\n")
+  cat("Try broader search terms.\n")
+  invisible(x)
 }
 
 ## -- Pillar summaries ---------------------------------------------------------

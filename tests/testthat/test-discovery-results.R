@@ -72,8 +72,40 @@ test_that("discovery result tables keep ordinary tibble behavior", {
       expect_false(printed$visible)
       expect_identical(printed$value, result_before)
       expect_identical(result, result_before)
-      expect_true(any(str_detect(output, fixed(case$header))))
+      if (nrow(result) > 0L || case$class == "tosi_connector_catalog") {
+        expect_true(any(str_detect(output, fixed(case$header))))
+      }
     }
+  }
+})
+
+test_that("empty discovery results print guidance without a table", {
+  cases <- list(
+    list(
+      result = new_tosi_search_results(tibble::tibble()),
+      output = c("No matching datasets found.", "Try broader search terms.")
+    ),
+    list(
+      result = new_tosi_dataset_catalog(tibble::tibble(
+        object_path = object_path(character()),
+        title = character(),
+        object_type = character(),
+        language = character()
+      )),
+      output = c(
+        "No datasets found in this catalog.",
+        "Try a shorter path or browse the connector."
+      )
+    )
+  )
+
+  for (case in cases) {
+    before <- case$result
+    output <- capture.output(printed <- withVisible(print(case$result)))
+    expect_identical(output, case$output)
+    expect_false(printed$visible)
+    expect_identical(printed$value, before)
+    expect_identical(case$result, before)
   }
 })
 
