@@ -46,7 +46,7 @@ is appended.
     \preformatted{TosiProvenance$new(
   stage,
   parent = NULL,
-  timestamp = lubridate::now("UTC"),
+  timestamp = now("UTC"),
   tosi_version = NULL,
   source_url = NULL,
   http_status = NULL,
@@ -98,7 +98,7 @@ this object observe the appended step.
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiProvenance$add_step(
   stage,
-  timestamp = lubridate::now("UTC"),
+  timestamp = now("UTC"),
   tosi_version = NULL,
   source_url = NULL,
   http_status = NULL,
