@@ -3,11 +3,57 @@
 its ordered columns, identifiers, labels, roles, and available value domains.
 It also includes the source version, language, and any frequency and
 series-key information. Fields are read-only; direct and nested replacement
-fails. Use $column_names() to see the physical names for each column mode."><meta property="og:description" content="tosi_schema() returns a TosiSchema describing a table or series through
+fails. Use $column_names() to see the physical names for each column mode.
+Use schema$component(id) to obtain the existing component by its exact ID,
+and schema$domain_table(id) to inspect its complete domain. Every component
+also provides component$domain_table() with the same return contract.
+These methods preserve source order and vector types. Code domains contain
+code and, only when supplied, label; Time and Frequency domains contain
+time and frequency, respectively, retaining native Date and frequency
+values. An unrecorded domain returns NULL (including Value); a recorded
+empty domain returns a typed zero-row tibble. Domain inspection does not
+translate values into source filters; filter conventions are source-specific.
+Use print(schema) or schema$print() for a compact overview without domain
+values. Dimensions, Time, Frequency and unknown roles are shown together;
+Attributes and Value are summarized separately. Relative order within each
+group is preserved; the stored component order is unchanged. Domain sizes
+distinguish unrecorded from recorded empty domains. Each component supports
+print(component) and component$print(n = 3) for focused inspection. The
+per-call n bounds domain rows for Dimensions, Time, Frequency and unknown
+roles. Attributes show metadata and domain size only; Value shows its unit
+when recorded. Printing returns the same object invisibly without mutation.
+$domain_table() extracts the complete domain regardless of display limits.
+Display truncation and omission markers are not literal source-filter values.
+Use str(schema) or str(component) for structural R6 inspection, including
+fields and method signatures, rather than the interactive overview.
+Component constructors are technical exports, not an extension interface."><meta property="og:description" content="tosi_schema() returns a TosiSchema describing a table or series through
 its ordered columns, identifiers, labels, roles, and available value domains.
 It also includes the source version, language, and any frequency and
 series-key information. Fields are read-only; direct and nested replacement
-fails. Use $column_names() to see the physical names for each column mode."></head><body>
+fails. Use $column_names() to see the physical names for each column mode.
+Use schema$component(id) to obtain the existing component by its exact ID,
+and schema$domain_table(id) to inspect its complete domain. Every component
+also provides component$domain_table() with the same return contract.
+These methods preserve source order and vector types. Code domains contain
+code and, only when supplied, label; Time and Frequency domains contain
+time and frequency, respectively, retaining native Date and frequency
+values. An unrecorded domain returns NULL (including Value); a recorded
+empty domain returns a typed zero-row tibble. Domain inspection does not
+translate values into source filters; filter conventions are source-specific.
+Use print(schema) or schema$print() for a compact overview without domain
+values. Dimensions, Time, Frequency and unknown roles are shown together;
+Attributes and Value are summarized separately. Relative order within each
+group is preserved; the stored component order is unchanged. Domain sizes
+distinguish unrecorded from recorded empty domains. Each component supports
+print(component) and component$print(n = 3) for focused inspection. The
+per-call n bounds domain rows for Dimensions, Time, Frequency and unknown
+roles. Attributes show metadata and domain size only; Value shows its unit
+when recorded. Printing returns the same object invisibly without mutation.
+$domain_table() extracts the complete domain regardless of display limits.
+Display truncation and omission markers are not literal source-filter values.
+Use str(schema) or str(component) for structural R6 inspection, including
+fields and method signatures, rather than the interactive overview.
+Component constructors are technical exports, not an extension interface."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +61,7 @@ fails. Use $column_names() to see the physical names for each column mode."></he
 
     <a class="navbar-brand me-2" href="../index.html">tosi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,6 +70,8 @@ fails. Use $column_names() to see the physical names for each column mode."></he
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/tosidata/tosi/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -46,6 +94,29 @@ its ordered columns, identifiers, labels, roles, and available value domains.
 It also includes the source version, language, and any frequency and
 series-key information. Fields are read-only; direct and nested replacement
 fails. Use <code>$column_names()</code> to see the physical names for each column mode.</p>
+<p>Use <code>schema$component(id)</code> to obtain the existing component by its exact ID,
+and <code>schema$domain_table(id)</code> to inspect its complete domain. Every component
+also provides <code>component$domain_table()</code> with the same return contract.
+These methods preserve source order and vector types. Code domains contain
+<code>code</code> and, only when supplied, <code>label</code>; Time and Frequency domains contain
+<code>time</code> and <code>frequency</code>, respectively, retaining native Date and frequency
+values. An unrecorded domain returns <code>NULL</code> (including Value); a recorded
+empty domain returns a typed zero-row tibble. Domain inspection does not
+translate values into source filters; filter conventions are source-specific.
+Use <code>print(schema)</code> or <code>schema$print()</code> for a compact overview without domain
+values. Dimensions, Time, Frequency and unknown roles are shown together;
+Attributes and Value are summarized separately. Relative order within each
+group is preserved; the stored component order is unchanged. Domain sizes
+distinguish unrecorded from recorded empty domains. Each component supports
+<code>print(component)</code> and <code>component$print(n = 3)</code> for focused inspection. The
+per-call <code>n</code> bounds domain rows for Dimensions, Time, Frequency and unknown
+roles. Attributes show metadata and domain size only; Value shows its unit
+when recorded. Printing returns the same object invisibly without mutation.
+<code>$domain_table()</code> extracts the complete domain regardless of display limits.
+Display truncation and omission markers are not literal source-filter values.
+Use <code>str(schema)</code> or <code>str(component)</code> for structural R6 inspection, including
+fields and method signatures, rather than the interactive overview.
+Component constructors are technical exports, not an extension interface.</p>
     </div>
 
 
@@ -91,6 +162,9 @@ fails. Use <code>$column_names()</code> to see the physical names for each colum
 <div class="section">
 <h3 id="public-methods">Public methods<a class="anchor" aria-label="anchor" href="#public-methods"></a></h3>
 <p></p><ul><li><p><a href="#method-TosiSchema-initialize"><code>TosiSchema$new()</code></a></p></li>
+<li><p><a href="#method-TosiSchema-print"><code>TosiSchema$print()</code></a></p></li>
+<li><p><a href="#method-TosiSchema-component"><code>TosiSchema$component()</code></a></p></li>
+<li><p><a href="#method-TosiSchema-domain_table"><code>TosiSchema$domain_table()</code></a></p></li>
 <li><p><a href="#method-TosiSchema-column_names"><code>TosiSchema$column_names()</code></a></p></li>
 <li><p><a href="#method-TosiSchema-as_list"><code>TosiSchema$as_list()</code></a></p></li>
 <li><p><a href="#method-TosiSchema-clone"><code>TosiSchema$clone()</code></a></p></li>
@@ -146,20 +220,76 @@ series-key component IDs.</p></dd>
 
 </div>
 
+<p></p><hr><a id="method-TosiSchema-print"></a><div class="section">
+<h3 id="tosischema-print-"><code>TosiSchema$print()</code><a class="anchor" aria-label="anchor" href="#tosischema-print-"></a></h3>
+<p>Print a compact role-grouped overview of every component, without
+domain values or changing stored component order.</p><div class="section">
+<h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">print</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-1">Returns<a class="anchor" aria-label="anchor" href="#returns-1"></a></h4>
+<p>This schema object, invisibly and without mutation.</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-TosiSchema-component"></a><div class="section">
+<h3 id="tosischema-component-"><code>TosiSchema$component()</code><a class="anchor" aria-label="anchor" href="#tosischema-component-"></a></h3>
+<p>Look up a component by its exact ID, not a list name, label, role or
+position. An unknown ID raises a lookup error.</p><div class="section">
+<h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">component</span><span class="op">(</span><span class="va">id</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>id</code></dt>
+<dd><p>Exact component ID.</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-2">Returns<a class="anchor" aria-label="anchor" href="#returns-2"></a></h4>
+<p>The existing schema component object, without cloning.</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-TosiSchema-domain_table"></a><div class="section">
+<h3 id="tosischema-domain-table-"><code>TosiSchema$domain_table()</code><a class="anchor" aria-label="anchor" href="#tosischema-domain-table-"></a></h3>
+<p>Return a component's complete domain by delegating to its
+<code>$domain_table()</code> method. An unknown ID raises a lookup error.</p><div class="section">
+<h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">domain_table</span><span class="op">(</span><span class="va">id</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>id</code></dt>
+<dd><p>Exact component ID.</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-3">Returns<a class="anchor" aria-label="anchor" href="#returns-3"></a></h4>
+<p>A tibble in source order with <code>code</code> and optional <code>label</code>,
+<code>time</code>, or <code>frequency</code> columns, preserving vector types. Returns
+<code>NULL</code> for an unrecorded domain, or a typed zero-row tibble for a
+recorded empty domain.</p>
+</div>
+
+</div>
+
 <p></p><hr><a id="method-TosiSchema-column_names"></a><div class="section">
 <h3 id="tosischema-column-names-"><code>TosiSchema$column_names()</code><a class="anchor" aria-label="anchor" href="#tosischema-column-names-"></a></h3>
 <p>Return physical column names in schema order without changing the schema.</p><div class="section">
-<h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
+<h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">column_names</span><span class="op">(</span>col_mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"labels"</span>, <span class="st">"safe_labels"</span>, <span class="st">"ids"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
+<h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>col_mode</code></dt>
 <dd><p>One of <code>"labels"</code>, <code>"safe_labels"</code>, or <code>"ids"</code>.</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-1">Returns<a class="anchor" aria-label="anchor" href="#returns-1"></a></h4>
+<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
 <p>A character vector of physical names named by component ID.</p>
 </div>
 
@@ -168,10 +298,10 @@ series-key component IDs.</p></dd>
 <p></p><hr><a id="method-TosiSchema-as_list"></a><div class="section">
 <h3 id="tosischema-as-list-"><code>TosiSchema$as_list()</code><a class="anchor" aria-label="anchor" href="#tosischema-as-list-"></a></h3>
 <p>Return the schema as a named list, with components as named lists.</p><div class="section">
-<h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
+<h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">as_list</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-2">Returns<a class="anchor" aria-label="anchor" href="#returns-2"></a></h4>
+<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
 <p>A named list containing the schema fields and components.</p>
 </div>
 
@@ -180,10 +310,10 @@ series-key component IDs.</p></dd>
 <p></p><hr><a id="method-TosiSchema-clone"></a><div class="section">
 <h3 id="tosischema-clone-"><code>TosiSchema$clone()</code><a class="anchor" aria-label="anchor" href="#tosischema-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
+<h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiSchema</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
+<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 

@@ -8,6 +8,32 @@ series-key information. Fields are read-only; direct and nested
 replacement fails. Use `$column_names()` to see the physical names for
 each column mode.
 
+Use `schema$component(id)` to obtain the existing component by its exact
+ID, and `schema$domain_table(id)` to inspect its complete domain. Every
+component also provides `component$domain_table()` with the same return
+contract. These methods preserve source order and vector types. Code
+domains contain `code` and, only when supplied, `label`; Time and
+Frequency domains contain `time` and `frequency`, respectively,
+retaining native Date and frequency values. An unrecorded domain returns
+`NULL` (including Value); a recorded empty domain returns a typed
+zero-row tibble. Domain inspection does not translate values into source
+filters; filter conventions are source-specific. Use `print(schema)` or
+`schema$print()` for a compact overview without domain values.
+Dimensions, Time, Frequency and unknown roles are shown together;
+Attributes and Value are summarized separately. Relative order within
+each group is preserved; the stored component order is unchanged. Domain
+sizes distinguish unrecorded from recorded empty domains. Each component
+supports `print(component)` and `component$print(n = 3)` for focused
+inspection. The per-call `n` bounds domain rows for Dimensions, Time,
+Frequency and unknown roles. Attributes show metadata and domain size
+only; Value shows its unit when recorded. Printing returns the same
+object invisibly without mutation. `$domain_table()` extracts the
+complete domain regardless of display limits. Display truncation and
+omission markers are not literal source-filter values. Use `str(schema)`
+or `str(component)` for structural R6 inspection, including fields and
+method signatures, rather than the interactive overview. Component
+constructors are technical exports, not an extension interface.
+
 ## Active bindings
 
 - `connector_id`:
@@ -47,6 +73,12 @@ each column mode.
 ### Public methods
 
 - [`TosiSchema$new()`](#method-TosiSchema-initialize)
+
+- [`TosiSchema$print()`](#method-TosiSchema-print)
+
+- [`TosiSchema$component()`](#method-TosiSchema-component)
+
+- [`TosiSchema$domain_table()`](#method-TosiSchema-domain_table)
 
 - [`TosiSchema$column_names()`](#method-TosiSchema-column_names)
 
@@ -112,6 +144,66 @@ Construct an object schema from package-owned schema components.
 #### Returns
 
 A new `TosiSchema` object.
+
+------------------------------------------------------------------------
+
+### `TosiSchema$print()`
+
+Print a compact role-grouped overview of every component, without domain
+values or changing stored component order.
+
+#### Usage
+
+    TosiSchema$print()
+
+#### Returns
+
+This schema object, invisibly and without mutation.
+
+------------------------------------------------------------------------
+
+### `TosiSchema$component()`
+
+Look up a component by its exact ID, not a list name, label, role or
+position. An unknown ID raises a lookup error.
+
+#### Usage
+
+    TosiSchema$component(id)
+
+#### Arguments
+
+- `id`:
+
+  Exact component ID.
+
+#### Returns
+
+The existing schema component object, without cloning.
+
+------------------------------------------------------------------------
+
+### `TosiSchema$domain_table()`
+
+Return a component's complete domain by delegating to its
+`$domain_table()` method. An unknown ID raises a lookup error.
+
+#### Usage
+
+    TosiSchema$domain_table(id)
+
+#### Arguments
+
+- `id`:
+
+  Exact component ID.
+
+#### Returns
+
+A tibble in source order with `code` and optional `label`, `time`, or
+`frequency` columns, preserving vector types. Returns `NULL` for an
+unrecorded domain, or a typed zero-row tibble for a recorded empty
+domain.
 
 ------------------------------------------------------------------------
 

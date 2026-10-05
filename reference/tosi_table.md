@@ -12,6 +12,9 @@ column or schema component.
 
 ``` r
 is_tosi_table(x)
+
+# S3 method for class 'tosi_table'
+as_tibble(x, ..., drop_replaced = FALSE)
 ```
 
 ## Arguments
@@ -20,6 +23,21 @@ is_tosi_table(x)
 
   Any R object.
 
+- ...:
+
+  Arguments passed to
+  [`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html).
+
+- drop_replaced:
+
+  If `TRUE`, omit delivered source columns identified by schema
+  components' `replaces_id`. Names are derived from the complete
+  embedded schema using the table's stored column mode.
+
 ## Value
 
 `TRUE` if `x` inherits from `"tosi_table"`, `FALSE` otherwise.
+
+`as_tibble()` returns an ordinary tibble. Conversion retains ordinary
+tibble metadata behavior; the schema is not reduced or rebuilt, and no
+metadata guarantee is made after conversion.

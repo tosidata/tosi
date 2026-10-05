@@ -51,7 +51,7 @@ Parent steps are copied before the new step is appended.
     TosiProvenance$new(
       stage,
       parent = NULL,
-      timestamp = lubridate::now("UTC"),
+      timestamp = now("UTC"),
       tosi_version = NULL,
       source_url = NULL,
       http_status = NULL,
@@ -141,7 +141,7 @@ this object observe the appended step.
 
     TosiProvenance$add_step(
       stage,
-      timestamp = lubridate::now("UTC"),
+      timestamp = now("UTC"),
       tosi_version = NULL,
       source_url = NULL,
       http_status = NULL,

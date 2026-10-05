@@ -29,6 +29,7 @@
 ## Work with tables and provenance
 
 - [`is_tosi_table()`](https://tosidata.github.io/tosi/reference/tosi_table.md)
+  [`as_tibble(`*`<tosi_table>`*`)`](https://tosidata.github.io/tosi/reference/tosi_table.md)
   : Retrieved tables
 - [`provenance()`](https://tosidata.github.io/tosi/reference/provenance.md)
   [`` `provenance<-`() ``](https://tosidata.github.io/tosi/reference/provenance.md)

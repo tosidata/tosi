@@ -19,7 +19,7 @@ Reading an artifact's provenance returns its live object, not a copy."></head><b
 
     <a class="navbar-brand me-2" href="../index.html">tosi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,6 +28,8 @@ Reading an artifact's provenance returns its live object, not a copy."></head><b
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/tosidata/tosi/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -85,7 +87,7 @@ is appended.</p><div class="section">
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va"><a href="../reference/TosiProvenance.html">TosiProvenance</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  <span class="va">stage</span>,</span>
 <span>  parent <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  timestamp <span class="op">=</span> <span class="fu">lubridate</span><span class="fu">::</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/now.html" class="external-link">now</a></span><span class="op">(</span><span class="st">"UTC"</span><span class="op">)</span>,</span>
+<span>  timestamp <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="st">"UTC"</span><span class="op">)</span>,</span>
 <span>  tosi_version <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  source_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  http_status <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -162,7 +164,7 @@ this object observe the appended step.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">TosiProvenance</span><span class="op">$</span><span class="fu">add_step</span><span class="op">(</span></span>
 <span>  <span class="va">stage</span>,</span>
-<span>  timestamp <span class="op">=</span> <span class="fu">lubridate</span><span class="fu">::</span><span class="fu"><a href="https://lubridate.tidyverse.org/reference/now.html" class="external-link">now</a></span><span class="op">(</span><span class="st">"UTC"</span><span class="op">)</span>,</span>
+<span>  timestamp <span class="op">=</span> <span class="fu">now</span><span class="op">(</span><span class="st">"UTC"</span><span class="op">)</span>,</span>
 <span>  tosi_version <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  source_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  http_status <span class="op">=</span> <span class="cn">NULL</span>,</span>
