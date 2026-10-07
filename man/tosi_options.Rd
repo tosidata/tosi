@@ -4,7 +4,13 @@
 \alias{tosi_options}
 \title{Configure your \code{tosi} options}
 \usage{
-tosi_options(url = NULL, token = NULL, language_preference = NULL)
+tosi_options(
+  url = NULL,
+  token = NULL,
+  language_preference = NULL,
+  cache_memory_size = NULL,
+  cache_disk_size = NULL
+)
 }
 \arguments{
 \item{url}{The HTTPS service URL provided with your TosiData access details.
@@ -18,6 +24,11 @@ example, \code{c("fi", "en")} requests Finnish when available, then English.
 When no preference is set or none of the preferred languages is available,
 the service uses the source's first language. This is a default, not a
 restriction: see \code{\link[=tosi]{tosi()}} for choosing a language for an individual call.}
+
+\item{cache_memory_size, cache_disk_size}{Cache size budgets in bytes.
+Defaults are 256 MiB in memory and 1 GiB on disk. \code{NULL} restores the
+corresponding default. Changing a size discards cached results on the
+next table request.}
 }
 \value{
 Invisible \code{NULL}. The function changes settings without displaying
@@ -32,6 +43,15 @@ current R session.
 You only need to supply the settings you want to change. For example,
 changing your language preference leaves your connection settings alone.
 }
+\section{Table cache}{
+
+Only table results from \code{\link[=tosi]{tosi()}} and \code{\link[=tosi_data]{tosi_data()}} are cached, using memory
+and temporary disk storage for this R session. Each layer keeps results for
+about five minutes; a disk hit restarts the memory lifetime.
+Call \code{\link[=tosi_cache_clear]{tosi_cache_clear()}} before requesting fresh data. Cache size budgets
+do not limit total R memory use.
+}
+
 \section{Connecting safely}{
 
 Use a service you trust. Your token is sent to the configured service for
@@ -63,11 +83,12 @@ Clearing a URL or token setting with \code{NULL} makes the package use the
 corresponding environment variable again; it does not revoke your token.
 Without a URL from either source, requests cannot proceed.
 
-The settings are stored as the R options \code{tosi.url}, \code{tosi.token}, and
-\code{tosi.language_preference}. They are read when you make a request. The
-function does not change environment variables or write files, so settings
-made with it do not carry over when you restart R. There is no environment
-variable for language preferences.
+The settings are stored as the R options \code{tosi.url}, \code{tosi.token},
+\code{tosi.language_preference}, \code{tosi.cache_memory_size}, and
+\code{tosi.cache_disk_size}. They are read when you make a request. The function
+does not change environment variables or write files, so settings made with
+it do not carry over when you restart R. There are no environment variables
+for language preferences or cache sizes.
 }
 
 \examples{

@@ -12,6 +12,21 @@ perform_service_request <- function(operation, args, call = caller_env()) {
     language_preference = getOption("tosi.language_preference")
   ))
 
+  cacheable <- operation %in% c("tosi", "tosi_data")
+  if (cacheable) {
+    cache <- get_service_cache()
+    key <- rlang::hash(list(
+      url = url,
+      token = token,
+      operation = operation,
+      args = args
+    ))
+    entry <- cache$get(key)
+    if (!cachem::is.key_missing(entry)) {
+      return(entry$value)
+    }
+  }
+
   req <- request(url) |>
     req_url_path_append("v1", "requests") |>
     req_auth_bearer_token(token) |>
@@ -103,7 +118,11 @@ perform_service_request <- function(operation, args, call = caller_env()) {
     call = call
   )
   on.exit(unlink(filename), add = TRUE)
-  decoder(filename)
+  value <- decoder(filename)
+  if (cacheable && is_tosi_table(value)) {
+    cache$set(key, list(value = value, file = filename))
+  }
+  value
 }
 
 download_service_result <- function(path, url, token, call = caller_env()) {

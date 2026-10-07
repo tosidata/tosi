@@ -28,6 +28,34 @@ test_that("tosi_options updates only supplied settings", {
   expect_identical(getOption("tosi.url"), "https://original.invalid")
 })
 
+test_that("cache sizes support partial updates and NULL clearing", {
+  withr::local_options(
+    tosi.url = "https://original.invalid",
+    tosi.token = "original-token",
+    tosi.language_preference = "fi",
+    tosi.cache_memory_size = 128 * 1024^2,
+    tosi.cache_disk_size = 1024^3
+  )
+
+  tosi_options(cache_memory_size = 64 * 1024^2)
+  expect_equal(getOption("tosi.cache_memory_size"), 64 * 1024^2)
+  expect_equal(getOption("tosi.cache_disk_size"), 1024^3)
+  tosi_options(cache_disk_size = 512 * 1024^2)
+  tosi_options()
+  tosi_options(language_preference = "en")
+  expect_equal(getOption("tosi.cache_memory_size"), 64 * 1024^2)
+  expect_equal(getOption("tosi.cache_disk_size"), 512 * 1024^2)
+  expect_identical(getOption("tosi.url"), "https://original.invalid")
+  expect_identical(getOption("tosi.token"), "original-token")
+
+  tosi_options(cache_memory_size = NULL)
+  expect_null(getOption("tosi.cache_memory_size"))
+  expect_equal(getOption("tosi.cache_disk_size"), 512 * 1024^2)
+  tosi_options(cache_disk_size = NULL)
+  expect_null(getOption("tosi.cache_disk_size"))
+  expect_identical(getOption("tosi.language_preference"), "en")
+})
+
 test_that("tosi_options defaults scheme-less URLs to HTTPS", {
   withr::local_options(tosi.url = NULL)
 

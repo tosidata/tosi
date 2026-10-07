@@ -70,6 +70,284 @@ local_result_service <- function(
   state
 }
 
+local_service_cache <- function(env = parent.frame(), ...) {
+  cache <- new_service_cache(...)
+  withr::defer(cache$get_caches()[[2L]]$destroy(), envir = env)
+  testthat::local_mocked_bindings(
+    get_service_cache = function() cache,
+    .package = "tosi",
+    .env = env
+  )
+  cache
+}
+
+test_that("table requests reuse memory and promote original disk artifacts", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  table <- structure(
+    data.frame(value = c(1, NA_real_)),
+    class = c("tosi_table", "data.frame"),
+    schema = list(full = TRUE),
+    provenance = list(source = "fixture")
+  )
+  for (representation in c("r-serialization", "qs2")) {
+    cache <- local_service_cache()
+    peer <- local_result_service(
+      table,
+      descriptor = list(
+        path = "/v1/results/cache-table",
+        representation = representation
+      ),
+      write_result = if (representation == "qs2") qs2::qs_save else saveRDS
+    )
+    expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+    key <- cache$keys()[[1L]]
+    layers <- cache$get_caches()
+    entry <- layers[[2L]]$get(key)
+    expect_identical(
+      readBin(entry$file, "raw", n = file.info(entry$file)$size),
+      peer$bytes
+    )
+    expect_identical(entry$value, table)
+    expect_false(file.exists(peer$download_paths[[1L]]))
+
+    expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+    layers[[1L]]$reset()
+    expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+    expect_true(layers[[1L]]$exists(key))
+    layers[[2L]]$reset()
+    expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+    expect_length(peer$post_requests, 1L)
+    expect_length(peer$get_requests, 1L)
+
+    expect_identical(suppressMessages(tosi("statfin/table")), table)
+    expect_identical(suppressMessages(tosi("statfin/table")), table)
+    expect_length(peer$post_requests, 2L)
+    expect_length(peer$get_requests, 2L)
+  }
+})
+
+test_that("cache identity includes captured credentials and effective arguments", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  withr::local_options(tosi.language_preference = NULL)
+  cache <- local_service_cache()
+  table <- structure(
+    data.frame(value = 1),
+    class = c("tosi_table", "data.frame")
+  )
+  peer <- local_result_service(table)
+  fetch <- function(...) suppressMessages(tosi_data("statfin/table", ...))
+  fetch()
+  options(tosi.token = "  token  ")
+  fetch()
+  expect_length(peer$post_requests, 1L)
+  options(tosi.token = "other-token")
+  fetch()
+  options(tosi.url = "https://other.invalid")
+  fetch()
+  options(tosi.language_preference = c("fi", "en"))
+  fetch()
+  fetch(lang = "sv")
+  fetch(lang = NULL)
+  fetch(source_filter = list(region = "01"))
+  fetch(aggregation = list(region = "total"))
+  fetch(col_mode = "ids")
+  fetch(format = "tbl")
+  expect_length(peer$post_requests, 10L)
+  expect_length(peer$get_requests, 10L)
+  expect_length(cache$keys(), 10L)
+  expect_false(any(str_detect(cache$keys(), fixed("token"))))
+})
+
+test_that("the cache key retains the pre-network request snapshot", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  withr::local_options(tosi.language_preference = "fi")
+  cache <- local_service_cache()
+  table <- structure(
+    data.frame(value = 1),
+    class = c("tosi_table", "data.frame")
+  )
+  peer <- local_result_service(table, on_post = function() {
+    options(
+      tosi.url = "https://later.invalid",
+      tosi.token = "later-token",
+      tosi.language_preference = "en"
+    )
+  })
+  expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+  options(tosi.url = NULL, tosi.token = NULL, tosi.language_preference = "fi")
+  expect_identical(suppressMessages(tosi_data("statfin/table")), table)
+  expect_length(peer$post_requests, 1L)
+  expect_length(peer$get_requests, 1L)
+})
+
+test_that("non-table results and other operations are never cached", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  cache <- local_service_cache()
+  peer <- local_result_service("catalog fallback")
+  for (i in 1:2) {
+    expect_identical(suppressMessages(tosi("statfin")), "catalog fallback")
+    expect_identical(
+      suppressMessages(tosi_data("statfin/table")),
+      "catalog fallback"
+    )
+  }
+  expect_length(peer$post_requests, 4L)
+  expect_length(peer$get_requests, 4L)
+  expect_length(cache$keys(), 0L)
+  table <- structure(
+    data.frame(value = 1),
+    class = c("tosi_table", "data.frame")
+  )
+  peer <- local_result_service(table)
+  for (operation in c("tosi_data_version", "tosi_schema", "tosi_url")) {
+    for (i in 1:2) {
+      expect_identical(
+        suppressMessages(perform_service_request(operation, list())),
+        table
+      )
+    }
+  }
+  expect_length(peer$post_requests, 6L)
+  expect_length(peer$get_requests, 6L)
+  expect_length(cache$keys(), 0L)
+})
+
+test_that("failed retrieval and decoding leave no cache entries or downloads", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  cache <- local_service_cache()
+  for (representation in c("r-serialization", "qs2")) {
+    peer <- local_result_service(
+      "unused",
+      descriptor = list(
+        path = "/v1/results/cache-table",
+        representation = representation
+      )
+    )
+    peer$bytes <- charToRaw("not serialized")
+    for (i in 1:2) {
+      expect_error(suppressMessages(tosi_data("statfin/table")))
+    }
+    expect_length(peer$post_requests, 2L)
+    expect_length(peer$get_requests, 2L)
+    expect_false(any(file.exists(peer$download_paths)))
+    expect_length(cache$keys(), 0L)
+  }
+  peer$sse_body <- 'event: error\ndata: {"message":"retrieval failed"}\n\n'
+  expect_error(suppressMessages(tosi_data("statfin/table")), "retrieval failed")
+  expect_length(cache$keys(), 0L)
+
+  paths <- character()
+  peer <- local_result_service("unused")
+  local_mocked_bindings(req_perform = function(req, path, ...) {
+    paths <<- c(paths, path)
+    writeBin(charToRaw("partial download"), path)
+    rlang::abort("download failed")
+  })
+  expect_error(suppressMessages(tosi_data("statfin/table")), "download failed")
+  expect_false(any(file.exists(paths)))
+  expect_length(cache$keys(), 0L)
+})
+
+test_that("native cache policies expire disk entries and prune size budgets", {
+  cache <- local_service_cache()
+  layers <- cache$get_caches()
+  file <- withr::local_tempfile()
+  saveRDS(
+    structure(data.frame(value = 1), class = c("tosi_table", "data.frame")),
+    file
+  )
+  cache$set("table", list(value = readRDS(file), file = file))
+  entry <- layers[[2L]]$get("table")
+  Sys.setFileTime(entry$file, Sys.time() - 301)
+  layers[[1L]]$reset()
+  expect_true(cachem::is.key_missing(cache$get("table")))
+
+  cache <- local_service_cache(memory_size = 1, disk_size = 1)
+  layers <- cache$get_caches()
+  file <- withr::local_tempfile()
+  saveRDS(data.frame(value = 1), file)
+  cache$set("table", list(value = readRDS(file), file = file))
+  layers[[1L]]$prune()
+  layers[[2L]]$prune()
+  expect_true(cachem::is.key_missing(cache$get("table")))
+})
+
+test_that("size updates and clearing apply to subsequent requests", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache-settings.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  withr::local_options(
+    tosi.cache_memory_size = NULL,
+    tosi.cache_disk_size = NULL
+  )
+  withr::defer(tosi_cache_clear())
+  tosi_cache_clear()
+  table <- structure(
+    data.frame(value = 1),
+    class = c("tosi_table", "data.frame")
+  )
+  peer <- local_result_service(table)
+  fetch <- function() suppressMessages(tosi_data("statfin/table"))
+  expect_identical(fetch(), table)
+  cache <- get_service_cache()
+  layers <- cache$get_caches()
+  expect_equal(layers[[1L]]$info()$max_size, 256 * 1024^2)
+  expect_equal(layers[[2L]]$info()$max_size, 1024^3)
+  expect_length(layers[[1L]]$keys(), 1L)
+  expect_length(layers[[2L]]$keys(), 1L)
+  expect_identical(fetch(), table)
+  expect_length(peer$post_requests, 1L)
+
+  expect_identical(
+    withVisible(tosi_cache_clear()),
+    list(value = NULL, visible = FALSE)
+  )
+  expect_length(layers[[1L]]$keys(), 0L)
+  expect_length(layers[[2L]]$keys(), 0L)
+  expect_identical(fetch(), table)
+  expect_length(peer$post_requests, 2L)
+  expect_length(peer$get_requests, 2L)
+
+  tosi_options(cache_memory_size = 64 * 1024^2)
+  expect_identical(fetch(), table)
+  layers <- get_service_cache()$get_caches()
+  expect_equal(layers[[1L]]$info()$max_size, 64 * 1024^2)
+  expect_equal(layers[[2L]]$info()$max_size, 1024^3)
+  expect_length(cache$keys(), 0L)
+  expect_length(peer$post_requests, 3L)
+
+  tosi_options(cache_disk_size = 512 * 1024^2)
+  expect_identical(fetch(), table)
+  layers <- get_service_cache()$get_caches()
+  expect_equal(layers[[1L]]$info()$max_size, 64 * 1024^2)
+  expect_equal(layers[[2L]]$info()$max_size, 512 * 1024^2)
+  expect_length(peer$post_requests, 4L)
+
+  tosi_options(cache_memory_size = NULL, cache_disk_size = NULL)
+  expect_identical(fetch(), table)
+  layers <- get_service_cache()$get_caches()
+  expect_equal(layers[[1L]]$info()$max_size, 256 * 1024^2)
+  expect_equal(layers[[2L]]$info()$max_size, 1024^3)
+  expect_length(peer$post_requests, 5L)
+  expect_length(peer$get_requests, 5L)
+})
+
 test_that("connection and server errors have safe distinct messages", {
   withr::local_options(tosi.url = "https://service.invalid", tosi.token = "")
   error <- rlang::error_cnd(
