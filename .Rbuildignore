@@ -7,5 +7,6 @@
 ^dev\.R$
 ^_pkgdown\.yml$
 ^docs$
+^vignettes/articles$
 ^tests/testthat/fixtures/README\.md$
 ^\.github$
