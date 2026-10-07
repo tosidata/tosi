@@ -11,7 +11,7 @@ current R session."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tosi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,13 @@ current R session.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">tosi_options</span><span class="op">(</span>url <span class="op">=</span> <span class="cn">NULL</span>, token <span class="op">=</span> <span class="cn">NULL</span>, language_preference <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">tosi_options</span><span class="op">(</span></span>
+<span>  url <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  token <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  language_preference <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cache_memory_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cache_disk_size <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -70,6 +76,13 @@ When no preference is set or none of the preferred languages is available,
 the service uses the source's first language. This is a default, not a
 restriction: see <code><a href="remote_frontends.html">tosi()</a></code> for choosing a language for an individual call.</p></dd>
 
+
+<dt id="arg-cache-memory-size-cache-disk-size">cache_memory_size, cache_disk_size<a class="anchor" aria-label="anchor" href="#arg-cache-memory-size-cache-disk-size"></a></dt>
+<dd><p>Cache size budgets in bytes.
+Defaults are 256 MiB in memory and 1 GiB on disk. <code>NULL</code> restores the
+corresponding default. Changing a size discards cached results on the
+next table request.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -80,6 +93,16 @@ them or returning your token.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>You only need to supply the settings you want to change. For example,
 changing your language preference leaves your connection settings alone.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="table-cache">Table cache<a class="anchor" aria-label="anchor" href="#table-cache"></a></h2>
+
+
+<p>Only table results from <code><a href="remote_frontends.html">tosi()</a></code> and <code><a href="remote_frontends.html">tosi_data()</a></code> are cached, using memory
+and temporary disk storage for this R session. Each layer keeps results for
+about five minutes; a disk hit restarts the memory lifetime.
+Call <code><a href="tosi_cache_clear.html">tosi_cache_clear()</a></code> before requesting fresh data. Cache size budgets
+do not limit total R memory use.</p>
     </div>
     <div class="section level2">
     <h2 id="connecting-safely">Connecting safely<a class="anchor" aria-label="anchor" href="#connecting-safely"></a></h2>
@@ -111,11 +134,12 @@ example, add these lines with your own values to <code>~/.Renviron</code> and re
 Clearing a URL or token setting with <code>NULL</code> makes the package use the
 corresponding environment variable again; it does not revoke your token.
 Without a URL from either source, requests cannot proceed.</p>
-<p>The settings are stored as the R options <code>tosi.url</code>, <code>tosi.token</code>, and
-<code>tosi.language_preference</code>. They are read when you make a request. The
-function does not change environment variables or write files, so settings
-made with it do not carry over when you restart R. There is no environment
-variable for language preferences.</p>
+<p>The settings are stored as the R options <code>tosi.url</code>, <code>tosi.token</code>,
+<code>tosi.language_preference</code>, <code>tosi.cache_memory_size</code>, and
+<code>tosi.cache_disk_size</code>. They are read when you make a request. The function
+does not change environment variables or write files, so settings made with
+it do not carry over when you restart R. There are no environment variables
+for language preferences or cache sizes.</p>
     </div>
 
     <div class="section level2">

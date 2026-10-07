@@ -2,6 +2,15 @@
 
 ## tosi (development version)
 
+## tosi 0.1.2
+
+- Configure session-local table cache budgets in bytes with
+  `tosi_options(cache_memory_size = ..., cache_disk_size = ...)`, or
+  clear both layers with
+  [`tosi_cache_clear()`](https://tosidata.github.io/tosi/reference/tosi_cache_clear.md).
+
+## tosi 0.1.1
+
 - Add `schema$component()` and `$domain_table()` methods for inspecting
   schema components and their complete value domains without nested-list
   wrangling.

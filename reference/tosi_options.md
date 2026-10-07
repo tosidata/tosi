@@ -7,7 +7,13 @@ in the current R session.
 ## Usage
 
 ``` r
-tosi_options(url = NULL, token = NULL, language_preference = NULL)
+tosi_options(
+  url = NULL,
+  token = NULL,
+  language_preference = NULL,
+  cache_memory_size = NULL,
+  cache_disk_size = NULL
+)
 ```
 
 ## Arguments
@@ -31,6 +37,12 @@ tosi_options(url = NULL, token = NULL, language_preference = NULL)
   [`tosi()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
   for choosing a language for an individual call.
 
+- cache_memory_size, cache_disk_size:
+
+  Cache size budgets in bytes. Defaults are 256 MiB in memory and 1 GiB
+  on disk. `NULL` restores the corresponding default. Changing a size
+  discards cached results on the next table request.
+
 ## Value
 
 Invisible `NULL`. The function changes settings without displaying them
@@ -40,6 +52,19 @@ or returning your token.
 
 You only need to supply the settings you want to change. For example,
 changing your language preference leaves your connection settings alone.
+
+## Table cache
+
+Only table results from
+[`tosi()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+and
+[`tosi_data()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+are cached, using memory and temporary disk storage for this R session.
+Each layer keeps results for about five minutes; a disk hit restarts the
+memory lifetime. Call
+[`tosi_cache_clear()`](https://tosidata.github.io/tosi/reference/tosi_cache_clear.md)
+before requesting fresh data. Cache size budgets do not limit total R
+memory use.
 
 ## Connecting safely
 
@@ -67,11 +92,12 @@ variables. Clearing a URL or token setting with `NULL` makes the package
 use the corresponding environment variable again; it does not revoke
 your token. Without a URL from either source, requests cannot proceed.
 
-The settings are stored as the R options `tosi.url`, `tosi.token`, and
-`tosi.language_preference`. They are read when you make a request. The
+The settings are stored as the R options `tosi.url`, `tosi.token`,
+`tosi.language_preference`, `tosi.cache_memory_size`, and
+`tosi.cache_disk_size`. They are read when you make a request. The
 function does not change environment variables or write files, so
-settings made with it do not carry over when you restart R. There is no
-environment variable for language preferences.
+settings made with it do not carry over when you restart R. There are no
+environment variables for language preferences or cache sizes.
 
 ## Examples
 

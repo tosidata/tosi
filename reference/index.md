@@ -18,6 +18,9 @@
 
   Configure your `tosi` options
 
+- [`tosi_cache_clear()`](https://tosidata.github.io/tosi/reference/tosi_cache_clear.md)
+  : Clear cached table results
+
 ## Inspect table metadata and structure
 
 - [`tosi_schema()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
