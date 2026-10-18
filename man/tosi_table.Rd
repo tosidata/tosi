@@ -33,3 +33,9 @@ every row in the source. \code{result_scope = "preview"} means the result is
 intentionally limited and may need a source filter for complete data.
 Result scope is not a table column or schema component.
 }
+\details{
+\code{attr(x, "schema")} is a \link{TosiSchema}, directly usable through its
+inherited schema methods. Its \verb{$reference} holds the sole canonical source
+identity and version; these are not independently stored on the table.
+Metadata describes the result at delivery. Wrangling may alter or discard it.
+}

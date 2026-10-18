@@ -400,13 +400,21 @@ TosiSchemaAttribute <- R6Class(
   )
 )
 
-#' Table structure
+#' Source-independent table structure
 #'
-#' [tosi_schema()] returns a `TosiSchema` describing a table or series through
-#' its ordered columns, identifiers, labels, roles, and available value domains.
-#' It also includes the source version, language, and any frequency and
-#' series-key information. Fields are read-only; direct and nested replacement
+#' `TosiStructure` describes a table or series through its ordered components,
+#' identifiers, labels, roles, and available value domains, without requiring
+#' source identity or a source version. It retains language, frequency, and
+#' series-key information. [TosiSchema] inherits this structure and adds a
+#' source binding through its `$reference` field. Both classes support the same
+#' structural methods. Fields are read-only; direct and nested replacement
 #' fails. Use `$column_names()` to see the physical names for each column mode.
+#'
+#' Use `structure$as_schema(connector_id, object_id, data_version)` to create a
+#' new source-bound schema. The receiver is unchanged and existing component
+#' instances are shared, not cloned. The inherited method on a bound schema
+#' also creates a new result with the supplied binding, without replacing the
+#' receiver's reference.
 #'
 #' Use `schema$component(id)` to obtain the existing component by its exact ID,
 #' and `schema$domain_table(id)` to inspect its complete domain. Every component
@@ -432,9 +440,6 @@ TosiSchemaAttribute <- R6Class(
 #' fields and method signatures, rather than the interactive overview.
 #' Component constructors are technical exports, not an extension interface.
 #'
-#' @field connector_id Scalar canonical connector ID vector.
-#' @field object_id Scalar canonical object ID vector.
-#' @field data_version Finite non-missing scalar `POSIXct` version.
 #' @field object_type Optional connector-supplied object type.
 #' @field lang Scalar natural-language code or `"codes"`.
 #' @field components Non-empty ordered list of schema components.
@@ -442,16 +447,13 @@ TosiSchemaAttribute <- R6Class(
 #' @field series_key Resolved series-key component IDs.
 #'
 #' @export
-TosiSchema <- R6Class(
-  "TosiSchema",
+TosiStructure <- R6Class(
+  "TosiStructure",
   portable = FALSE,
   public = list(
     #' @description
-    #' Construct an object schema from package-owned schema components.
+    #' Construct a structural schema from package-owned schema components.
     #'
-    #' @param connector_id Scalar canonical connector ID.
-    #' @param object_id Scalar canonical object ID.
-    #' @param data_version Finite non-missing scalar `POSIXct` source version.
     #' @param components Non-empty ordered list of package-owned schema
     #'   component objects.
     #' @param object_type Optional connector-supplied object type: `"table"`,
@@ -461,25 +463,14 @@ TosiSchema <- R6Class(
     #' @param series_key Optional ordered character vector of eligible
     #'   series-key component IDs.
     #'
-    #' @return A new `TosiSchema` object.
+    #' @return A new `TosiStructure` object.
     initialize = function(
-      connector_id,
-      object_id,
-      data_version,
       components,
       object_type = NULL,
       lang = NULL,
       frequency = NULL,
       series_key = NULL
     ) {
-      # Validate before function-position lookup because the accepted formal
-      # names shadow the canonical constructor bindings.
-      validate_scalar_string(connector_id)
-      validate_scalar_string(object_id)
-      canonical_connector_id <- connector_id(connector_id)
-      canonical_object_id <- object_id(object_id)
-      validate_required_data_version(data_version, "data_version")
-
       validate_scalar_string(object_type, allow_null = TRUE)
       if (!is.null(object_type) && !object_type %in% c("table", "series")) {
         cli_abort(
@@ -606,9 +597,6 @@ TosiSchema <- R6Class(
         resolved_series_key <- NULL
       }
 
-      private$.connector_id <- canonical_connector_id
-      private$.object_id <- canonical_object_id
-      private$.data_version <- data_version
       private$.object_type <- object_type
       private$.lang <- lang
       private$.components <- components
@@ -617,30 +605,137 @@ TosiSchema <- R6Class(
     },
 
     #' @description
+    #' Create a source-bound schema sharing the existing component instances.
+    #' The receiver and its reference, if any, remain unchanged.
+    #'
+    #' @param connector_id Scalar canonical connector ID.
+    #' @param object_id Scalar canonical object ID.
+    #' @param data_version Finite non-missing scalar `POSIXct` source version.
+    #' @return A new `TosiSchema` object.
+    as_schema = function(connector_id, object_id, data_version) {
+      TosiSchema$new(
+        connector_id = connector_id,
+        object_id = object_id,
+        data_version = data_version,
+        components = self$components,
+        object_type = self$object_type,
+        lang = self$lang,
+        frequency = self$frequency,
+        series_key = self$series_key
+      )
+    },
+
+    #' @description
     #' Print a compact role-grouped overview of every component, without
     #' domain values or changing stored component order.
     #'
     #' @return This schema object, invisibly and without mutation.
     print = function() {
-      cat(
-        "<TosiSchema> ",
-        as.character(self$connector_id),
-        "/",
-        as.character(self$object_id),
-        " (",
-        self$lang,
-        ")\n",
-        sep = ""
+      cat("<TosiStructure> (", self$lang, ")\n", sep = "")
+      private$print_structure()
+      invisible(self)
+    },
+
+    #' @description
+    #' Look up a component by its exact ID, not a list name, label, role or
+    #' position. An unknown ID raises a lookup error.
+    #'
+    #' @param id Exact component ID.
+    #' @return The existing schema component object, without cloning.
+    component = function(id) {
+      index <- match(id, map_chr(self$components, "id"))
+      if (is.na(index)) {
+        cli_abort("Unknown schema component ID {.val {id}}.")
+      }
+      self$components[[index]]
+    },
+
+    #' @description
+    #' Return a component's complete domain by delegating to its
+    #' `$domain_table()` method. An unknown ID raises a lookup error.
+    #'
+    #' @param id Exact component ID.
+    #' @return A tibble in source order with `code` and optional `label`,
+    #'   `time`, or `frequency` columns, preserving vector types. Returns
+    #'   `NULL` for an unrecorded domain, or a typed zero-row tibble for a
+    #'   recorded empty domain.
+    domain_table = function(id) {
+      self$component(id)$domain_table()
+    },
+
+    #' @description
+    #' Return physical column names in component order without changing the
+    #' structure. `"labels"` uses component labels, `"safe_labels"` converts them
+    #' to safe IDs, and `"ids"` uses canonical component IDs. Label modes fall
+    #' back to IDs with a warning when labels are blank, protect canonical Time
+    #' and Value names, and repair collisions across the complete structure,
+    #' including undelivered Attributes.
+    #'
+    #' @param col_mode One of `"labels"`, `"safe_labels"`, or `"ids"`.
+    #' @return A character vector of physical names named by component ID.
+    column_names = function(col_mode = c("labels", "safe_labels", "ids")) {
+      col_mode <- match.arg(col_mode)
+      component_ids <- unname(map_chr(self$components, "id"))
+      if (identical(col_mode, "ids")) {
+        return(stats::setNames(component_ids, component_ids))
+      }
+
+      labels <- unname(map_chr(self$components, "label"))
+      physical_names <- switch(
+        col_mode,
+        labels = labels,
+        safe_labels = stringi::stri_trans_general(labels, "Latin-ASCII") |>
+          str_replace_all("[^a-zA-Z0-9_]", "_") |>
+          str_replace("^(?=[[:digit:]])", "_")
       )
+      fallback <- !nzchar(str_trim(labels)) | !nzchar(physical_names)
+      physical_names[fallback] <- component_ids[fallback]
+      if (any(fallback)) {
+        cli_warn(c(
+          "Localized column labels were unavailable for some components.",
+          "i" = "Using canonical IDs for: {.val {component_ids[fallback]}}."
+        ))
+      }
+
+      canonical <- component_ids %in%
+        c("time", "value") &
+        unname(map_chr(self$components, "role")) %in% c("time", "value")
+      physical_names[canonical] <- component_ids[canonical]
+      protected_names <- physical_names[canonical]
+      repaired_names <- make.unique(
+        c(protected_names, physical_names[!canonical]),
+        sep = "_"
+      )
+      physical_names[!canonical] <- repaired_names[
+        length(protected_names) + seq_len(sum(!canonical))
+      ]
+      stats::setNames(physical_names, component_ids)
+    },
+
+    #' @description
+    #' Return the schema as a named list, with components as named lists.
+    #'
+    #' @return A named list containing the schema fields and components.
+    as_list = function() {
+      list(
+        object_type = self$object_type,
+        lang = self$lang,
+        frequency = self$frequency,
+        series_key = self$series_key,
+        components = map(self$components, \(component) component$as_list())
+      )
+    }
+  ),
+  private = list(
+    .object_type = NULL,
+    .lang = NULL,
+    .components = NULL,
+    .frequency = NULL,
+    .series_key = NULL,
+    print_structure = function() {
       if (!is.null(self$object_type)) {
         cat("  object_type: ", self$object_type, "\n", sep = "")
       }
-      cat(
-        "  data_version: ",
-        format(self$data_version, usetz = TRUE),
-        "\n",
-        sep = ""
-      )
       if (!is.null(self$frequency)) {
         cat("  frequency: ", as.character(self$frequency), "\n", sep = "")
       }
@@ -679,94 +774,9 @@ TosiSchema <- R6Class(
         base::print(table, n = Inf, width = getOption("width"))
       }
       invisible(self)
-    },
-
-    #' @description
-    #' Look up a component by its exact ID, not a list name, label, role or
-    #' position. An unknown ID raises a lookup error.
-    #'
-    #' @param id Exact component ID.
-    #' @return The existing schema component object, without cloning.
-    component = function(id) {
-      index <- match(id, map_chr(self$components, "id"))
-      if (is.na(index)) {
-        cli_abort("Unknown schema component ID {.val {id}}.")
-      }
-      self$components[[index]]
-    },
-
-    #' @description
-    #' Return a component's complete domain by delegating to its
-    #' `$domain_table()` method. An unknown ID raises a lookup error.
-    #'
-    #' @param id Exact component ID.
-    #' @return A tibble in source order with `code` and optional `label`,
-    #'   `time`, or `frequency` columns, preserving vector types. Returns
-    #'   `NULL` for an unrecorded domain, or a typed zero-row tibble for a
-    #'   recorded empty domain.
-    domain_table = function(id) {
-      self$component(id)$domain_table()
-    },
-
-    #' @description
-    #' Return physical column names in schema order without changing the schema.
-    #'
-    #' @param col_mode One of `"labels"`, `"safe_labels"`, or `"ids"`.
-    #' @return A character vector of physical names named by component ID.
-    column_names = function(col_mode = c("labels", "safe_labels", "ids")) {
-      col_mode <- match.arg(col_mode)
-      stats::setNames(
-        physical_column_names(self$components, col_mode),
-        map_chr(self$components, "id")
-      )
-    },
-
-    #' @description
-    #' Return the schema as a named list, with components as named lists.
-    #'
-    #' @return A named list containing the schema fields and components.
-    as_list = function() {
-      list(
-        connector_id = self$connector_id,
-        object_id = self$object_id,
-        data_version = self$data_version,
-        object_type = self$object_type,
-        lang = self$lang,
-        frequency = self$frequency,
-        series_key = self$series_key,
-        components = map(self$components, \(component) component$as_list())
-      )
     }
   ),
-  private = list(
-    .connector_id = NULL,
-    .object_id = NULL,
-    .data_version = NULL,
-    .object_type = NULL,
-    .lang = NULL,
-    .components = NULL,
-    .frequency = NULL,
-    .series_key = NULL
-  ),
   active = list(
-    connector_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field connector_id} is read-only.")
-      }
-      private$.connector_id
-    },
-    object_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field object_id} is read-only.")
-      }
-      private$.object_id
-    },
-    data_version = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field data_version} is read-only.")
-      }
-      private$.data_version
-    },
     object_type = function(value) {
       if (!missing(value)) {
         cli_abort("{.field object_type} is read-only.")
@@ -796,6 +806,115 @@ TosiSchema <- R6Class(
         cli_abort("{.field series_key} is read-only.")
       }
       private$.series_key
+    }
+  )
+)
+
+#' Source-bound table structure
+#'
+#' `TosiSchema` inherits [TosiStructure] and associates its structural graph
+#' with one [TosiDataReference]. Construct it directly or use
+#' `structure$as_schema(connector_id, object_id, data_version)` to bind an
+#' existing structure without changing it or cloning its components.
+#' Use `$component()`, `$domain_table()`, and
+#' `$column_names()` directly, without unwrapping another schema object.
+#' Canonical identity and source version are available only through
+#' `$reference$connector_id`, `$reference$object_id`, and
+#' `$reference$data_version`.
+#'
+#' A `tosi_table` embeds this source-bound schema. Obtaining its `schema`
+#' attribute retains the source binding. The embedded reference is the sole
+#' authority for that binding; the table stores no independent identity or
+#' version copy. Metadata describes the delivered result, with no guarantee
+#' after table wrangling.
+#'
+#' Inherited fields, the reference binding, and reference fields are read-only.
+#' These shared model constructors are technical exports, not an external
+#' subclassing interface.
+#'
+#' @field reference The schema's `TosiDataReference`.
+#' @export
+TosiSchema <- R6Class(
+  "TosiSchema",
+  inherit = TosiStructure,
+  portable = FALSE,
+  public = list(
+    #' @description
+    #' Construct the structural graph and its canonical source reference.
+    #'
+    #' @param connector_id Scalar canonical connector ID.
+    #' @param object_id Scalar canonical object ID.
+    #' @param data_version Finite non-missing scalar `POSIXct` source version.
+    #' @param components Non-empty ordered list of package-owned schema
+    #'   component objects.
+    #' @param object_type Optional connector-supplied object type: `"table"`,
+    #'   `"series"`, or `NULL`.
+    #' @param lang Scalar natural-language code or `"codes"`.
+    #' @param frequency Optional scalar known frequency code.
+    #' @param series_key Optional ordered character vector of eligible
+    #'   series-key component IDs.
+    #' @return A new `TosiSchema` object.
+    initialize = function(
+      connector_id,
+      object_id,
+      data_version,
+      components,
+      object_type = NULL,
+      lang = NULL,
+      frequency = NULL,
+      series_key = NULL
+    ) {
+      reference <- TosiDataReference$new(connector_id, object_id, data_version)
+      super$initialize(
+        components = components,
+        object_type = object_type,
+        lang = lang,
+        frequency = frequency,
+        series_key = series_key
+      )
+      private$.reference <- reference
+    },
+
+    #' @description
+    #' Print source identity and version, followed by the structural overview.
+    #' @return This schema object, invisibly and without mutation.
+    print = function() {
+      cat(
+        "<TosiSchema> ",
+        as.character(self$reference$connector_id),
+        "/",
+        as.character(self$reference$object_id),
+        " (",
+        self$lang,
+        ")\n",
+        sep = ""
+      )
+      cat(
+        "  data_version: ",
+        format(self$reference$data_version, usetz = TRUE),
+        "\n",
+        sep = ""
+      )
+      private$print_structure()
+      invisible(self)
+    },
+
+    #' @description
+    #' Return structural fields and the composed reference as named lists.
+    #' @return A named list containing schema fields, components, and reference.
+    as_list = function() {
+      c(super$as_list(), list(reference = self$reference$as_list()))
+    }
+  ),
+  private = list(
+    .reference = NULL
+  ),
+  active = list(
+    reference = function(value) {
+      if (!missing(value)) {
+        cli_abort("{.field reference} is read-only.")
+      }
+      private$.reference
     }
   )
 )

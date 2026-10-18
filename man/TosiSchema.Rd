@@ -2,56 +2,35 @@
 % Please edit documentation in R/TosiSchema.R
 \name{TosiSchema}
 \alias{TosiSchema}
-\title{Table structure}
+\title{Source-bound table structure}
 \description{
-\code{\link[=tosi_schema]{tosi_schema()}} returns a \code{TosiSchema} describing a table or series through
-its ordered columns, identifiers, labels, roles, and available value domains.
-It also includes the source version, language, and any frequency and
-series-key information. Fields are read-only; direct and nested replacement
-fails. Use \verb{$column_names()} to see the physical names for each column mode.
+\code{TosiSchema} inherits \link{TosiStructure} and associates its structural graph
+with one \link{TosiDataReference}. Construct it directly or use
+\code{structure$as_schema(connector_id, object_id, data_version)} to bind an
+existing structure without changing it or cloning its components.
+Use \verb{$component()}, \verb{$domain_table()}, and
+\verb{$column_names()} directly, without unwrapping another schema object.
+Canonical identity and source version are available only through
+\verb{$reference$connector_id}, \verb{$reference$object_id}, and
+\verb{$reference$data_version}.
 
-Use \code{schema$component(id)} to obtain the existing component by its exact ID,
-and \code{schema$domain_table(id)} to inspect its complete domain. Every component
-also provides \code{component$domain_table()} with the same return contract.
-These methods preserve source order and vector types. Code domains contain
-\code{code} and, only when supplied, \code{label}; Time and Frequency domains contain
-\code{time} and \code{frequency}, respectively, retaining native Date and frequency
-values. An unrecorded domain returns \code{NULL} (including Value); a recorded
-empty domain returns a typed zero-row tibble. Domain inspection does not
-translate values into source filters; filter conventions are source-specific.
-Use \code{print(schema)} or \code{schema$print()} for a compact overview without domain
-values. Dimensions, Time, Frequency and unknown roles are shown together;
-Attributes and Value are summarized separately. Relative order within each
-group is preserved; the stored component order is unchanged. Domain sizes
-distinguish unrecorded from recorded empty domains. Each component supports
-\code{print(component)} and \code{component$print(n = 3)} for focused inspection. The
-per-call \code{n} bounds domain rows for Dimensions, Time, Frequency and unknown
-roles. Attributes show metadata and domain size only; Value shows its unit
-when recorded. Printing returns the same object invisibly without mutation.
-\verb{$domain_table()} extracts the complete domain regardless of display limits.
-Display truncation and omission markers are not literal source-filter values.
-Use \code{str(schema)} or \code{str(component)} for structural R6 inspection, including
-fields and method signatures, rather than the interactive overview.
-Component constructors are technical exports, not an extension interface.
+A \code{tosi_table} embeds this source-bound schema. Obtaining its \code{schema}
+attribute retains the source binding. The embedded reference is the sole
+authority for that binding; the table stores no independent identity or
+version copy. Metadata describes the delivered result, with no guarantee
+after table wrangling.
+
+Inherited fields, the reference binding, and reference fields are read-only.
+These shared model constructors are technical exports, not an external
+subclassing interface.
+}
+\section{Super class}{
+\code{\link[tosi:TosiStructure]{TosiStructure}} -> \code{TosiSchema}
 }
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{connector_id}}{Scalar canonical connector ID vector.}
-
-    \item{\code{object_id}}{Scalar canonical object ID vector.}
-
-    \item{\code{data_version}}{Finite non-missing scalar \code{POSIXct} version.}
-
-    \item{\code{object_type}}{Optional connector-supplied object type.}
-
-    \item{\code{lang}}{Scalar natural-language code or \code{"codes"}.}
-
-    \item{\code{components}}{Non-empty ordered list of schema components.}
-
-    \item{\code{frequency}}{Optional scalar known frequency code.}
-
-    \item{\code{series_key}}{Resolved series-key component IDs.}
+    \item{\code{reference}}{The schema's \code{TosiDataReference}.}
   }
   \if{html}{\out{</div>}}
 }
@@ -60,18 +39,23 @@ Component constructors are technical exports, not an extension interface.
   \itemize{
     \item \href{#method-TosiSchema-initialize}{\code{TosiSchema$new()}}
     \item \href{#method-TosiSchema-print}{\code{TosiSchema$print()}}
-    \item \href{#method-TosiSchema-component}{\code{TosiSchema$component()}}
-    \item \href{#method-TosiSchema-domain_table}{\code{TosiSchema$domain_table()}}
-    \item \href{#method-TosiSchema-column_names}{\code{TosiSchema$column_names()}}
     \item \href{#method-TosiSchema-as_list}{\code{TosiSchema$as_list()}}
     \item \href{#method-TosiSchema-clone}{\code{TosiSchema$clone()}}
   }
 }
+\if{html}{\out{<details open><summary>Inherited methods</summary>
+<ul>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="as_schema"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-as_schema'><code>TosiStructure$as_schema()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="column_names"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-column_names'><code>TosiStructure$column_names()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="component"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-component'><code>TosiStructure$component()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="domain_table"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-domain_table'><code>TosiStructure$domain_table()</code></a></span></li>
+</ul>
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TosiSchema-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-initialize}{}}}
 \subsection{\code{TosiSchema$new()}}{
-  Construct an object schema from package-owned schema components.
+  Construct the structural graph and its canonical source reference.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$new(
@@ -112,8 +96,7 @@ series-key component IDs.}
 \if{html}{\out{<a id="method-TosiSchema-print"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-print}{}}}
 \subsection{\code{TosiSchema$print()}}{
-  Print a compact role-grouped overview of every component, without
-domain values or changing stored component order.
+  Print source identity and version, followed by the structural overview.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$print()}
@@ -125,88 +108,17 @@ domain values or changing stored component order.
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TosiSchema-component"></a>}}
-\if{latex}{\out{\hypertarget{method-TosiSchema-component}{}}}
-\subsection{\code{TosiSchema$component()}}{
-  Look up a component by its exact ID, not a list name, label, role or
-position. An unknown ID raises a lookup error.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{TosiSchema$component(id)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{id}}{Exact component ID.}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    The existing schema component object, without cloning.
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TosiSchema-domain_table"></a>}}
-\if{latex}{\out{\hypertarget{method-TosiSchema-domain_table}{}}}
-\subsection{\code{TosiSchema$domain_table()}}{
-  Return a component's complete domain by delegating to its
-\verb{$domain_table()} method. An unknown ID raises a lookup error.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{TosiSchema$domain_table(id)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{id}}{Exact component ID.}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A tibble in source order with \code{code} and optional \code{label},
-\code{time}, or \code{frequency} columns, preserving vector types. Returns
-\code{NULL} for an unrecorded domain, or a typed zero-row tibble for a
-recorded empty domain.
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TosiSchema-column_names"></a>}}
-\if{latex}{\out{\hypertarget{method-TosiSchema-column_names}{}}}
-\subsection{\code{TosiSchema$column_names()}}{
-  Return physical column names in schema order without changing the schema.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{TosiSchema$column_names(col_mode = c("labels", "safe_labels", "ids"))}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{col_mode}}{One of \code{"labels"}, \code{"safe_labels"}, or \code{"ids"}.}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A character vector of physical names named by component ID.
-  }
-}
-
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TosiSchema-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-as_list}{}}}
 \subsection{\code{TosiSchema$as_list()}}{
-  Return the schema as a named list, with components as named lists.
+  Return structural fields and the composed reference as named lists.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$as_list()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the schema fields and components.
+    A named list containing schema fields, components, and reference.
   }
 }
 

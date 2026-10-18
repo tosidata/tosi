@@ -68,11 +68,8 @@ test_that("generic overview represents all roles without domain values or mutati
     TosiSchemaTime$new(time_domain = as.Date("2020-01-01")),
     TosiSchemaFrequency$new(frequency_domain = frequency_code("A"))
   )
-  schema <- TosiSchema$new(
-    "demo",
-    "sample",
-    as.POSIXct("2020-01-01", tz = "UTC"),
-    components,
+  schema <- TosiStructure$new(
+    components = components,
     lang = "en"
   )
   before <- schema$as_list()
@@ -80,7 +77,7 @@ test_that("generic overview represents all roles without domain values or mutati
   output <- capture.output(result <- withVisible(schema$print()))
   text <- paste(output, collapse = "\n")
   for (fact in c(
-    "demo/sample",
+    "<TosiStructure>",
     "ID",
     "label",
     "role",
@@ -93,8 +90,7 @@ test_that("generic overview represents all roles without domain values or mutati
     "note",
     "value",
     "EUR",
-    "not recorded",
-    "data_version: 2020-01-01"
+    "not recorded"
   )) {
     expect_match(text, fact, fixed = TRUE)
   }
@@ -105,7 +101,14 @@ test_that("generic overview represents all roles without domain values or mutati
     which(grepl("unknown", output))[1] < which(grepl("first", output))[1]
   )
   expect_match(text, "first.*dimension.*0")
-  for (hidden in c("hidden", "object_type", "<TosiSchemaDimension>")) {
+  for (hidden in c(
+    "hidden",
+    "object_type",
+    "data_version",
+    "connector_id",
+    "object_id",
+    "<TosiSchemaDimension>"
+  )) {
     expect_false(grepl(hidden, text, fixed = TRUE))
   }
   expect_identical(result$value, schema)
@@ -158,7 +161,9 @@ test_that("long labels preserve essential facts on narrow consoles", {
   names_before <- schema$column_names()
   output <- capture.output(print(schema))
   expect_lte(max(nchar(output, type = "width")), 60)
+  expect_match(output[[1]], "<TosiSchema>", fixed = TRUE)
   expect_match(output[[1]], "demo/sample", fixed = TRUE)
+  expect_true(any(grepl("data_version: 2020-01-01", output, fixed = TRUE)))
   expect_true(any(grepl("object_type: table", output, fixed = TRUE)))
   expect_true(any(grepl("Attributes:", output, fixed = TRUE)))
   for (fact in c(
@@ -189,11 +194,8 @@ test_that("schemas without dimensions and missing versus empty domains stay usef
     TosiSchemaAttribute$new("empty", domain_codes = character()),
     TosiSchemaValue$new()
   )) {
-    schema <- TosiSchema$new(
-      "demo",
-      "sample",
-      as.POSIXct("2020-01-01", tz = "UTC"),
-      list(component),
+    schema <- TosiStructure$new(
+      components = list(component),
       lang = "en"
     )
     text <- paste(capture.output(print(schema)), collapse = "\n")

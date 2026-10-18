@@ -30,11 +30,30 @@ test_that("tosi_table is an ordinary tibble carrier", {
 
   expect_true(is_tosi_table(table))
   expect_s3_class(table, "tbl_df")
-  expect_identical(attr(table, "schema", exact = TRUE), schema)
+  embedded <- attr(table, "schema", exact = TRUE)
+  expect_identical(embedded, schema)
+  expect_r6_class(embedded, "TosiSchema")
+  expect_identical(embedded$component("geo"), schema$components[[1L]])
+  expect_identical(embedded$reference$connector_id, connector_id("statfin"))
+  expect_identical(embedded$reference$object_id, object_id("test_table"))
+  expect_identical(
+    embedded$reference$data_version,
+    as.POSIXct("2024-01-01", tz = "UTC")
+  )
+  expect_length(
+    intersect(
+      names(attributes(table)),
+      c("reference", "connector_id", "object_id", "data_version")
+    ),
+    0L
+  )
   expect_identical(names(table), c("geo", "value"))
   expect_identical(table$value, data$value)
   expect_identical(attr(table, "result_scope", exact = TRUE), "complete")
   expect_false("result_scope" %in% names(table))
+  output <- paste(capture.output(print(table)), collapse = "\n")
+  expect_match(output, "statfin/test_table", fixed = TRUE)
+  expect_match(output, "2024-01-01", fixed = TRUE)
 
   ordinary <- tibble::as_tibble(table)
   expect_false(is_tosi_table(ordinary))
@@ -46,6 +65,18 @@ test_that("tosi_table is an ordinary tibble carrier", {
   expect_identical(
     tibble::as_tibble(table, .name_repair = toupper, rownames = "row"),
     tibble::as_tibble(expected, .name_repair = toupper, rownames = "row")
+  )
+})
+
+test_that("platform tables require a source-bound schema", {
+  structural <- TosiStructure$new(
+    components = list(TosiSchemaValue$new()),
+    lang = "en"
+  )
+  expect_error(
+    new_tosi_table(tibble::tibble(value = 1), structural, "ids"),
+    "TosiSchema",
+    class = "rlang_error"
   )
 })
 
@@ -82,7 +113,8 @@ test_that("opt-in conversion drops only delivered replacement columns", {
     named <- data
     names(named) <- unname(physical[names(data)])
     table <- new_tosi_table(named, schema, mode, result_scope = "preview")
-    before <- serialize(table, NULL)
+    columns_before <- map(table, identity)
+    attributes_before <- attributes(table)
     ordinary <- tibble::as_tibble(table)
     expect_identical(names(ordinary), names(named))
     expect_equal(ordinary, named, ignore_attr = TRUE)
@@ -94,7 +126,8 @@ test_that("opt-in conversion drops only delivered replacement columns", {
     expect_identical(converted, ordinary[keep])
     expect_false(is_tosi_table(converted))
     expect_identical(attr(converted, "schema"), schema)
-    expect_identical(serialize(table, NULL), before)
+    expect_identical(map(table, identity), columns_before)
+    expect_identical(attributes(table), attributes_before)
     expect_identical(schema$as_list(), schema_before)
 
     # A replaced source column need not be physically delivered.

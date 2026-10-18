@@ -14,10 +14,7 @@ test_that("exact-ID lookup and domain inspection preserve schema state", {
     TosiSchemaValue$new(unit = "persons"),
     TosiSchemaAttribute$new("status", domain_codes = c("P", "F"))
   )
-  schema <- TosiSchema$new(
-    connector_id = "mock",
-    object_id = "inspection",
-    data_version = as.POSIXct("2025-01-01", tz = "UTC"),
+  schema <- TosiStructure$new(
     components = components,
     lang = "en"
   )
@@ -42,10 +39,7 @@ test_that("exact-ID lookup and domain inspection preserve schema state", {
   expect_error(schema$component("dimension"), "Unknown.*dimension")
   expect_error(schema$domain_table("missing"), "Unknown.*missing")
 
-  named_schema <- TosiSchema$new(
-    connector_id = "mock",
-    object_id = "named_inspection",
-    data_version = schema$data_version,
+  named_schema <- TosiStructure$new(
     lang = "en",
     components = list(alias = components[[2L]])
   )
@@ -100,8 +94,7 @@ test_that("domain inspection distinguishes absent and typed empty domains", {
   })
 })
 
-test_that("TosiSchema preserves identity and an ordered semantic graph", {
-  data_version <- as.POSIXct("2025-01-02 03:04:05", tz = "UTC")
+test_that("TosiStructure constructs an identity-free ordered semantic graph", {
   time_domain <- as.Date(c("2020-01-01", "2021-01-01"))
   frequency_domain <- frequency_code("A")
 
@@ -148,10 +141,7 @@ test_that("TosiSchema preserves identity and an ordered semantic graph", {
     level = "observation"
   )
 
-  schema <- TosiSchema$new(
-    connector_id = "statfin",
-    object_id = "population",
-    data_version = data_version,
+  schema <- TosiStructure$new(
     components = list(
       geo,
       source_period,
@@ -165,10 +155,25 @@ test_that("TosiSchema preserves identity and an ordered semantic graph", {
     lang = "en"
   )
 
-  expect_identical(schema$connector_id, connector_id("statfin"))
-  expect_identical(schema$object_id, object_id("population"))
-  expect_identical(schema$data_version, data_version)
+  expect_r6_class(schema, "TosiStructure")
+  expect_false(inherits(schema, "TosiSchema"))
+  expect_false(any(
+    c(
+      "connector_id",
+      "object_id",
+      "data_version",
+      "reference"
+    ) %in%
+      names(schema)
+  ))
+  expect_named(
+    schema$as_list(),
+    c("object_type", "lang", "frequency", "series_key", "components"),
+    ignore.order = TRUE
+  )
+  expect_identical(schema$object_type, "series")
   expect_identical(schema$lang, "en")
+  expect_null(schema$frequency)
   expect_identical(
     map_chr(schema$components, \(component) component$id),
     c(
@@ -221,45 +226,120 @@ test_that("TosiSchema preserves identity and an ordered semantic graph", {
 })
 
 test_that("schema naming allocates from all components without changing schema", {
-  schema <- TosiSchema$new(
-    connector_id = "statfin",
-    object_id = "population",
-    data_version = as.POSIXct("2025-01-02", tz = "UTC"),
+  components <- list(
+    first_alias = TosiSchemaDimension$new(id = "first", label = "Trade value"),
+    absent_alias = TosiSchemaAttribute$new(
+      id = "absent",
+      label = "Trade-value"
+    ),
+    last_alias = TosiSchemaDimension$new(id = "last", label = "Trade value"),
+    time_alias = TosiSchemaDimension$new(id = "conflict", label = "time"),
+    value_alias = TosiSchemaDimension$new(
+      id = "value_conflict",
+      label = "value"
+    ),
+    fixed_alias = TosiSchemaDimension$new(id = "fixed", label = "status"),
+    leading_alias = TosiSchemaDimension$new(id = "leading", label = "1écho"),
+    canonical_time = TosiSchemaTime$new(
+      label = "Localized time",
+      data_type = "date"
+    ),
+    canonical_value = TosiSchemaValue$new(),
+    status_alias = TosiSchemaAttribute$new(id = "status", label = "status")
+  )
+  structural <- TosiStructure$new(lang = "en", components = components)
+  bound <- structural$as_schema(
+    "statfin",
+    "trade",
+    as.POSIXct("2025-01-02", tz = "UTC")
+  )
+  ids <- unname(map_chr(components, "id"))
+  expected <- list(
+    ids = ids,
+    labels = c(
+      "Trade value",
+      "Trade-value",
+      "Trade value_1",
+      "time_1",
+      "value_1",
+      "status",
+      "1écho",
+      "time",
+      "value",
+      "status_1"
+    ),
+    safe_labels = c(
+      "Trade_value",
+      "Trade_value_1",
+      "Trade_value_2",
+      "time_1",
+      "value_1",
+      "status",
+      "_1echo",
+      "time",
+      "value",
+      "status_1"
+    )
+  )
+
+  for (schema in list(structural, bound)) {
+    original <- schema$as_list()
+    fields <- names(schema)
+    for (mode in names(expected)) {
+      physical_names <- schema$column_names(mode)
+      expect_identical(physical_names, stats::setNames(expected[[mode]], ids))
+    }
+    expect_identical(schema$column_names(), schema$column_names("labels"))
+    expect_identical(schema$as_list(), original)
+    expect_identical(schema$components, components)
+    expect_identical(names(schema), fields)
+  }
+})
+
+test_that("structural naming preserves blank-label fallback warnings", {
+  structural <- TosiStructure$new(
     lang = "en",
     components = list(
-      TosiSchemaDimension$new(id = "first", label = "Trade value"),
-      TosiSchemaAttribute$new(id = "absent", label = "Trade-value"),
-      TosiSchemaDimension$new(id = "last", label = "Trade value"),
-      TosiSchemaDimension$new(id = "conflict", label = "time"),
-      TosiSchemaTime$new(label = "Localized time", data_type = "date"),
+      TosiSchemaDimension$new(id = "blank", label = "  "),
+      TosiSchemaDimension$new(id = "missing"),
       TosiSchemaValue$new()
     )
   )
-  original <- schema$as_list()
-  names <- schema$column_names("safe_labels")
-  expect_identical(
-    names[c("first", "last", "conflict", "time", "value")],
-    c(
-      first = "Trade_value",
-      last = "Trade_value_2",
-      conflict = "time_1",
-      time = "time",
-      value = "value"
-    )
+  bound <- structural$as_schema(
+    "statfin",
+    "trade",
+    as.POSIXct("2025-01-02", tz = "UTC")
   )
-  expect_identical(names[["absent"]], "Trade_value_1")
-  expect_identical(schema$column_names("labels")[["time"]], "time")
-  expect_identical(schema$column_names("ids")[["last"]], "last")
-  expect_identical(schema$as_list(), original)
+  for (schema in list(structural, bound)) {
+    original <- schema$as_list()
+    expected <- c(blank = "blank", missing = "missing", value = "value")
+    expect_no_warning(physical_names <- schema$column_names("ids"))
+    expect_identical(physical_names, expected)
+    for (mode in c("labels", "safe_labels")) {
+      expect_warning(
+        physical_names <- schema$column_names(mode),
+        "Using canonical IDs for"
+      )
+      expect_identical(physical_names, expected)
+    }
+    expect_identical(schema$as_list(), original)
+  }
 })
 
-test_that("TosiSchema accepts biweekly frequency and retains source dates", {
+test_that("structural naming is the only public naming interface", {
+  expect_false("physical_column_names" %in% getNamespaceExports("tosi"))
+  expect_false(exists(
+    "physical_column_names",
+    envir = asNamespace("tosi"),
+    inherits = TRUE
+  ))
+  expect_named(formals(TosiStructure$public_methods$column_names), "col_mode")
+})
+
+test_that("TosiStructure accepts biweekly frequency and retains source dates", {
   dates <- as.Date(c("2026-08-05", "2026-08-19"))
   time <- TosiSchemaTime$new(time_domain = dates)
-  schema <- TosiSchema$new(
-    connector_id = "mock",
-    object_id = "biweekly",
-    data_version = as.POSIXct("2026-08-20", tz = "UTC"),
+  schema <- TosiStructure$new(
     components = list(time, TosiSchemaValue$new()),
     object_type = "table",
     lang = "en",
@@ -272,15 +352,12 @@ test_that("TosiSchema accepts biweekly frequency and retains source dates", {
   expect_null(schema$series_key)
 })
 
-test_that("TosiSchema accepts mixed biweekly and unknown frequency domains", {
+test_that("TosiStructure accepts biweekly and unknown frequency domains", {
   frequencies <- frequency_code(c("W2", "W", NA))
   frequency <- TosiSchemaFrequency$new(
     frequency_domain = frequencies
   )
-  schema <- TosiSchema$new(
-    connector_id = "mock",
-    object_id = "mixed_frequency",
-    data_version = as.POSIXct("2026-08-20", tz = "UTC"),
+  schema <- TosiStructure$new(
     components = list(
       TosiSchemaTime$new(),
       frequency,
@@ -299,7 +376,7 @@ test_that("TosiSchema accepts mixed biweekly and unknown frequency domains", {
   expect_null(schema$series_key)
 })
 
-test_that("TosiSchema and all component classes reject field replacement", {
+test_that("TosiStructure and all component classes reject field replacement", {
   component <- TosiSchemaComponent$new(
     id = "unknown",
     label = "Unknown",
@@ -318,10 +395,7 @@ test_that("TosiSchema and all component classes reject field replacement", {
     "status",
     level = "observation"
   )
-  schema <- TosiSchema$new(
-    connector_id = "mock",
-    object_id = "population",
-    data_version = as.POSIXct("2025-01-01", tz = "UTC"),
+  schema <- TosiStructure$new(
     components = list(
       component,
       dimension,
@@ -335,9 +409,13 @@ test_that("TosiSchema and all component classes reject field replacement", {
   )
 
   candidate <- schema$clone()
-  expect_error(candidate$object_id <- object_id("changed"), "read-only")
-  candidate <- schema$clone()
+  expect_error(candidate$object_type <- "series", "read-only")
+  expect_error(candidate$lang <- "codes", "read-only")
+  expect_error(candidate$frequency <- frequency_code("A"), "read-only")
+  expect_error(candidate$series_key <- "geo", "read-only")
+  expect_error(candidate$components <- list(dimension), "read-only")
   expect_error(candidate$components[[1L]] <- dimension, "read-only")
+  expect_identical(candidate$as_list(), schema$as_list())
   candidate <- component$clone()
   expect_error(candidate$label <- "Changed", "read-only")
   candidate <- component$clone()
@@ -353,7 +431,7 @@ test_that("TosiSchema and all component classes reject field replacement", {
   candidate <- attribute$clone()
   expect_error(candidate$level <- "series", "read-only")
 
-  expect_identical(schema$object_id, object_id("population"))
+  expect_identical(schema$object_type, "table")
   expect_identical(component$domain$label, "Alpha")
   expect_identical(dimension$role, "dimension")
   expect_null(time$replaces_id)
@@ -404,21 +482,14 @@ test_that("TosiSchemaValue supplies canonical numeric facts and a unit", {
   })
 })
 
-test_that("TosiSchema permits zero or one Value component", {
-  data_version <- as.POSIXct("2025-01-02", tz = "UTC")
+test_that("TosiStructure permits zero or one Value component", {
   dimension <- TosiSchemaDimension$new("geo")
-  no_value <- TosiSchema$new(
-    connector_id = "statfin",
-    object_id = "population",
-    data_version = data_version,
+  no_value <- TosiStructure$new(
     components = list(dimension),
     object_type = "table",
     lang = "en"
   )
-  one_value <- TosiSchema$new(
-    connector_id = "statfin",
-    object_id = "population",
-    data_version = data_version,
+  one_value <- TosiStructure$new(
     components = list(dimension, TosiSchemaValue$new()),
     object_type = "table",
     lang = "en"
@@ -434,10 +505,7 @@ test_that("TosiSchema permits zero or one Value component", {
     1L
   )
   expect_error(
-    TosiSchema$new(
-      connector_id = "statfin",
-      object_id = "population",
-      data_version = data_version,
+    TosiStructure$new(
       components = list(
         dimension,
         TosiSchemaValue$new(),
@@ -450,14 +518,9 @@ test_that("TosiSchema permits zero or one Value component", {
   )
 })
 
-test_that("TosiSchema rejects a graph with an unresolved replacement", {
-  data_version <- as.POSIXct("2025-01-02", tz = "UTC")
-
+test_that("TosiStructure rejects a graph with an unresolved replacement", {
   expect_error(
-    TosiSchema$new(
-      connector_id = "statfin",
-      object_id = "population",
-      data_version = data_version,
+    TosiStructure$new(
       components = list(
         TosiSchemaDimension$new("geo"),
         TosiSchemaTime$new(replaces_id = "source_period"),
@@ -466,6 +529,97 @@ test_that("TosiSchema rejects a graph with an unresolved replacement", {
       object_type = "series",
       lang = "en"
     ),
+    "replaces_id",
+    class = "rlang_error"
+  )
+})
+
+test_that("identity-free schemas retain aggregate structural constraints", {
+  dimension <- TosiSchemaDimension$new("geo")
+  invalid_graphs <- list(
+    list(),
+    list("geo"),
+    list(dimension, dimension),
+    list(TosiSchemaDimension$new("time")),
+    list(
+      TosiSchemaAttribute$new("period"),
+      TosiSchemaTime$new(replaces_id = "period")
+    )
+  )
+  patterns <- c(
+    "non-empty list",
+    "TosiSchemaComponent",
+    "unique",
+    "Reserved",
+    "replaces_id"
+  )
+  walk2(invalid_graphs, patterns, function(components, pattern) {
+    expect_error(
+      TosiStructure$new(components = components, lang = "en"),
+      pattern,
+      class = "rlang_error"
+    )
+  })
+  expect_error(
+    TosiStructure$new(
+      components = list(dimension, TosiSchemaFrequency$new()),
+      lang = "en",
+      frequency = frequency_code("A")
+    ),
+    "frequency",
+    class = "rlang_error"
+  )
+  expect_error(
+    TosiStructure$new(components = list(dimension), lang = NULL),
+    "lang",
+    class = "rlang_error"
+  )
+  expect_error(
+    TosiStructure$new(
+      components = list(dimension),
+      lang = "en",
+      object_type = "list"
+    ),
+    "object_type",
+    class = "rlang_error"
+  )
+})
+
+test_that("structural series keys retain derivation and ordered eligibility", {
+  components <- list(
+    TosiSchemaDimension$new("geo"),
+    TosiSchemaDimension$new("kind")
+  )
+  schema <- TosiStructure$new(
+    components = components,
+    object_type = "series",
+    lang = "codes",
+    series_key = "kind"
+  )
+  expect_identical(schema$series_key, "kind")
+  expect_error(
+    TosiStructure$new(components = components, lang = "en", series_key = "geo"),
+    "series_key",
+    class = "rlang_error"
+  )
+  expect_error(
+    TosiStructure$new(
+      components = components,
+      object_type = "series",
+      lang = "en",
+      series_key = c("kind", "geo")
+    ),
+    "ordered eligible subset",
+    class = "rlang_error"
+  )
+  expect_error(
+    TosiStructure$new(
+      components = c(components, list(TosiSchemaTime$new())),
+      object_type = "series",
+      lang = "en",
+      series_key = "geo"
+    ),
+    "fully derived key",
     class = "rlang_error"
   )
 })
