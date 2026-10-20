@@ -825,8 +825,9 @@ TosiStructure <- R6Class(
 #' attribute retains the source binding. The schema is the sole authority for
 #' that binding; the table stores no independent identity or version copy.
 #' Metadata describes the delivered result, with no guarantee after wrangling.
-#' `$as_list()` projects the source binding as an ordinary nested `reference`
-#' list; this projection is not independently authoritative state.
+#' `$as_list()` returns an ordinary list with top-level source-binding fields
+#' followed by structural fields; components are projected as named lists.
+#' This projection is not independently authoritative state.
 #'
 #' Inherited fields and source-binding fields are read-only; direct and nested
 #' replacement fails. The version's shape is checked at construction; the
@@ -913,18 +914,19 @@ TosiSchema <- R6Class(
     },
 
     #' @description
-    #' Return structural fields and the source binding as named lists.
-    #' @return A named list containing schema fields, components, and reference.
+    #' Return source-binding fields followed by structural fields.
+    #' @return A named list with `connector_id`, `object_id`, `data_version`,
+    #'   `object_type`, `lang`, `frequency`, `series_key`, and `components`,
+    #'   in that order. Components are projected as named lists; other fields
+    #'   retain their values, types, and attributes.
     as_list = function() {
       c(
-        super$as_list(),
         list(
-          reference = list(
-            connector_id = self$connector_id,
-            object_id = self$object_id,
-            data_version = self$data_version
-          )
-        )
+          connector_id = self$connector_id,
+          object_id = self$object_id,
+          data_version = self$data_version
+        ),
+        super$as_list()
       )
     }
   ),

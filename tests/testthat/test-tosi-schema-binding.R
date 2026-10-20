@@ -1,6 +1,9 @@
 test_that("source-bound schemas inherit the structural graph and methods", {
-  version <- as.POSIXct("2025-01-02", tz = "UTC")
-  attr(version, "generation") <- "fixture-generation"
+  version <- structure(
+    as.POSIXct("2025-01-02 03:04:05.125", tz = "Pacific/Chatham"),
+    names = "statfin/trade",
+    generation = "fixture-generation"
+  )
   components <- list(
     TosiSchemaDimension$new(
       "geo",
@@ -48,16 +51,27 @@ test_that("source-bound schemas inherit the structural graph and methods", {
 
   projected <- schema$as_list()
   expect_identical(
+    names(projected),
+    c(
+      "connector_id",
+      "object_id",
+      "data_version",
+      "object_type",
+      "lang",
+      "frequency",
+      "series_key",
+      "components"
+    )
+  )
+  expect_identical(
     projected,
     c(
-      structural$as_list(),
       list(
-        reference = list(
-          connector_id = connector_id("statfin"),
-          object_id = object_id("trade"),
-          data_version = version
-        )
-      )
+        connector_id = connector_id("statfin"),
+        object_id = object_id("trade"),
+        data_version = version
+      ),
+      structural$as_list()
     )
   )
 })
@@ -210,9 +224,13 @@ test_that("bound schemas bind again without changing their source binding", {
   expect_identical(schema$object_id, object_id("trade"))
   expect_identical(schema$data_version, version)
   expect_identical(rebound$components, schema$components)
+  structural_fields <- setdiff(
+    names(before),
+    c("connector_id", "object_id", "data_version")
+  )
   expect_identical(
-    rebound$as_list()[names(before) != "reference"],
-    before[names(before) != "reference"]
+    rebound$as_list()[structural_fields],
+    before[structural_fields]
   )
   expect_identical(schema$as_list(), before)
   expect_identical(class(schema), before_class)

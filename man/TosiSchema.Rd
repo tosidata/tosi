@@ -17,8 +17,9 @@ A \code{tosi_table} embeds this source-bound schema. Obtaining its \code{schema}
 attribute retains the source binding. The schema is the sole authority for
 that binding; the table stores no independent identity or version copy.
 Metadata describes the delivered result, with no guarantee after wrangling.
-\verb{$as_list()} projects the source binding as an ordinary nested \code{reference}
-list; this projection is not independently authoritative state.
+\verb{$as_list()} returns an ordinary list with top-level source-binding fields
+followed by structural fields; components are projected as named lists.
+This projection is not independently authoritative state.
 
 Inherited fields and source-binding fields are read-only; direct and nested
 replacement fails. The version's shape is checked at construction; the
@@ -117,14 +118,17 @@ series-key component IDs.}
 \if{html}{\out{<a id="method-TosiSchema-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-as_list}{}}}
 \subsection{\code{TosiSchema$as_list()}}{
-  Return structural fields and the source binding as named lists.
+  Return source-binding fields followed by structural fields.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$as_list()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing schema fields, components, and reference.
+    A named list with \code{connector_id}, \code{object_id}, \code{data_version},
+\code{object_type}, \code{lang}, \code{frequency}, \code{series_key}, and \code{components},
+in that order. Components are projected as named lists; other fields
+retain their values, types, and attributes.
   }
 }
 
