@@ -129,6 +129,92 @@ test_that("table requests reuse memory and promote original disk artifacts", {
   }
 })
 
+test_that("native schema binding survives delivery and table cache promotion", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://cache.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  version <- structure(
+    as.POSIXct("2026-09-07 12:34:56.125", tz = "Pacific/Chatham"),
+    names = "statfin/table",
+    generation = "fixture-generation"
+  )
+  schema <- TosiSchema$new(
+    connector_id = "statfin",
+    object_id = "table",
+    data_version = version,
+    components = list(
+      TosiSchemaDimension$new("label", domain_codes = "one"),
+      TosiSchemaValue$new(unit = "EUR")
+    ),
+    object_type = "table",
+    lang = "codes"
+  )
+  table <- new_tosi_table(
+    data.frame(label = c("one", NA_character_), value = c(1, NA_real_)),
+    schema = schema,
+    col_mode = "ids",
+    title = "Native schema fixture",
+    source_label = "Fixture source",
+    result_scope = "preview"
+  )
+
+  for (representation in c("r-serialization", "qs2")) {
+    cache <- local_service_cache()
+    descriptor <- list(
+      path = "/v1/results/bound-schema",
+      representation = representation
+    )
+    write_result <- if (representation == "qs2") qs2::qs_save else saveRDS
+    schema_peer <- local_result_service(
+      schema,
+      descriptor = descriptor,
+      write_result = write_result
+    )
+    restored_schema <- suppressMessages(tosi_schema("statfin/table"))
+    expect_length(schema_peer$post_requests, 1L)
+    expect_length(schema_peer$get_requests, 1L)
+    expect_false(file.exists(schema_peer$download_paths[[1L]]))
+    expect_length(cache$keys(), 0L)
+
+    descriptor$path <- "/v1/results/bound-table"
+    table_peer <- local_result_service(
+      table,
+      descriptor = descriptor,
+      write_result = write_result
+    )
+    delivered <- suppressMessages(tosi_data("statfin/table"))
+    memory <- suppressMessages(tosi_data("statfin/table"))
+    expect_identical(memory, delivered)
+    key <- cache$keys()[[1L]]
+    layers <- cache$get_caches()
+    entry <- layers[[2L]]$get(key)
+    expect_identical(
+      readBin(entry$file, "raw", n = file.info(entry$file)$size),
+      table_peer$bytes
+    )
+    expect_false(file.exists(table_peer$download_paths[[1L]]))
+    layers[[1L]]$reset()
+    disk <- suppressMessages(tosi_data("statfin/table"))
+    expect_true(layers[[1L]]$exists(key))
+    layers[[2L]]$reset()
+    expect_identical(suppressMessages(tosi_data("statfin/table")), disk)
+    expect_length(table_peer$post_requests, 1L)
+    expect_length(table_peer$get_requests, 1L)
+
+    expect_r6_class(restored_schema, "TosiSchema")
+    expect_identical(restored_schema$as_list(), schema$as_list())
+    expect_s3_class(delivered, "tosi_table")
+    expect_equal(delivered, table)
+    expect_identical(attr(delivered, "schema")$as_list(), schema$as_list())
+    expect_equal(disk, delivered)
+    expect_identical(
+      attr(disk, "schema")$as_list(),
+      attr(delivered, "schema")$as_list()
+    )
+  }
+})
+
 test_that("cache identity includes captured credentials and effective arguments", {
   withr::local_envvar(c(
     TOSI_URL = "https://cache.invalid",

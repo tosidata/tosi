@@ -4,25 +4,26 @@
 \alias{TosiSchema}
 \title{Source-bound table structure}
 \description{
-\code{TosiSchema} inherits \link{TosiStructure} and associates its structural graph
-with one \link{TosiDataReference}. Construct it directly or use
+\code{TosiSchema} inherits \link{TosiStructure} and directly stores canonical source
+identity and version. Construct it directly or use
 \code{structure$as_schema(connector_id, object_id, data_version)} to bind an
 existing structure without changing it or cloning its components.
 Use \verb{$component()}, \verb{$domain_table()}, and
 \verb{$column_names()} directly, without unwrapping another schema object.
-Canonical identity and source version are available only through
-\verb{$reference$connector_id}, \verb{$reference$object_id}, and
-\verb{$reference$data_version}.
+Canonical identity and source version are available through read-only
+\verb{$connector_id}, \verb{$object_id}, and \verb{$data_version} bindings.
 
 A \code{tosi_table} embeds this source-bound schema. Obtaining its \code{schema}
-attribute retains the source binding. The embedded reference is the sole
-authority for that binding; the table stores no independent identity or
-version copy. Metadata describes the delivered result, with no guarantee
-after table wrangling.
+attribute retains the source binding. The schema is the sole authority for
+that binding; the table stores no independent identity or version copy.
+Metadata describes the delivered result, with no guarantee after wrangling.
+\verb{$as_list()} projects the source binding as an ordinary nested \code{reference}
+list; this projection is not independently authoritative state.
 
-Inherited fields, the reference binding, and reference fields are read-only.
-These shared model constructors are technical exports, not an external
-subclassing interface.
+Inherited fields and source-binding fields are read-only; direct and nested
+replacement fails. The version's shape is checked at construction; the
+producer establishes which source input it describes. These shared model
+constructors are technical exports, not an external subclassing interface.
 }
 \section{Super class}{
 \code{\link[tosi:TosiStructure]{TosiStructure}} -> \code{TosiSchema}
@@ -30,7 +31,12 @@ subclassing interface.
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{reference}}{The schema's \code{TosiDataReference}.}
+    \item{\code{connector_id}}{Read-only scalar canonical connector ID vector.}
+
+    \item{\code{object_id}}{Read-only scalar canonical object ID vector.}
+
+    \item{\code{data_version}}{Read-only finite non-missing scalar \code{POSIXct} source
+version.}
   }
   \if{html}{\out{</div>}}
 }
@@ -55,7 +61,7 @@ subclassing interface.
 \if{html}{\out{<a id="method-TosiSchema-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-initialize}{}}}
 \subsection{\code{TosiSchema$new()}}{
-  Construct the structural graph and its canonical source reference.
+  Construct the structural graph and its canonical source binding.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$new(
@@ -111,7 +117,7 @@ series-key component IDs.}
 \if{html}{\out{<a id="method-TosiSchema-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-as_list}{}}}
 \subsection{\code{TosiSchema$as_list()}}{
-  Return structural fields and the composed reference as named lists.
+  Return structural fields and the source binding as named lists.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$as_list()}

@@ -34,10 +34,10 @@ test_that("tosi_table is an ordinary tibble carrier", {
   expect_identical(embedded, schema)
   expect_r6_class(embedded, "TosiSchema")
   expect_identical(embedded$component("geo"), schema$components[[1L]])
-  expect_identical(embedded$reference$connector_id, connector_id("statfin"))
-  expect_identical(embedded$reference$object_id, object_id("test_table"))
+  expect_identical(embedded$connector_id, connector_id("statfin"))
+  expect_identical(embedded$object_id, object_id("test_table"))
   expect_identical(
-    embedded$reference$data_version,
+    embedded$data_version,
     as.POSIXct("2024-01-01", tz = "UTC")
   )
   expect_length(

@@ -95,8 +95,9 @@ new_tosi_table <- function(
 #' Result scope is not a table column or schema component.
 #'
 #' `attr(x, "schema")` is a [TosiSchema], directly usable through its
-#' inherited schema methods. Its `$reference` holds the sole canonical source
-#' identity and version; these are not independently stored on the table.
+#' inherited schema methods. It holds the sole canonical source identity and
+#' version through `$connector_id`, `$object_id`, and `$data_version`; these are
+#' not independently stored on the table.
 #' Metadata describes the result at delivery. Wrangling may alter or discard it.
 #'
 #' @param x Any R object.
@@ -148,14 +149,14 @@ tbl_sum.tosi_table <- function(x, ...) {
   c(
     preview,
     tosi_table = paste(
-      schema$reference$connector_id,
-      schema$reference$object_id,
+      schema$connector_id,
+      schema$object_id,
       sep = "/"
     ),
     title = attr(x, "title", exact = TRUE),
     source = attr(x, "source_label", exact = TRUE),
     data_version = format(
-      schema$reference$data_version,
+      schema$data_version,
       "%Y-%m-%d %H:%M:%S %Z"
     ),
     if (!is.null(schema$frequency)) {

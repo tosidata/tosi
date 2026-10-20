@@ -1,5 +1,6 @@
 test_that("source-bound schemas inherit the structural graph and methods", {
   version <- as.POSIXct("2025-01-02", tz = "UTC")
+  attr(version, "generation") <- "fixture-generation"
   components <- list(
     TosiSchemaDimension$new(
       "geo",
@@ -39,31 +40,29 @@ test_that("source-bound schemas inherit the structural graph and methods", {
   for (mode in c("ids", "labels", "safe_labels")) {
     expect_identical(schema$column_names(mode), structural$column_names(mode))
   }
-  expect_r6_class(schema$reference, "TosiDataReference")
-  expect_identical(schema$reference$connector_id, connector_id("statfin"))
-  expect_identical(schema$reference$object_id, object_id("trade"))
-  expect_identical(schema$reference$data_version, version)
-  expect_false(any(
-    c(
-      "schema",
-      "connector_id",
-      "object_id",
-      "data_version"
-    ) %in%
-      names(schema)
-  ))
+  expect_identical(schema$connector_id, connector_id("statfin"))
+  expect_identical(schema$object_id, object_id("trade"))
+  expect_identical(schema$data_version, version)
+  expect_false("schema" %in% names(schema))
+  expect_false("reference" %in% names(schema))
 
   projected <- schema$as_list()
-  expect_named(
+  expect_identical(
     projected,
-    c(names(structural$as_list()), "reference"),
-    ignore.order = TRUE
+    c(
+      structural$as_list(),
+      list(
+        reference = list(
+          connector_id = connector_id("statfin"),
+          object_id = object_id("trade"),
+          data_version = version
+        )
+      )
+    )
   )
-  expect_identical(projected$reference, schema$reference$as_list())
-  expect_identical(projected[names(structural$as_list())], structural$as_list())
 })
 
-test_that("converted inherited and reference state stays read-only", {
+test_that("converted inherited and source-binding state stays read-only", {
   version <- as.POSIXct("2025-01-02", tz = "UTC")
   structure <- TosiStructure$new(
     components = list(TosiSchemaDimension$new("geo"), TosiSchemaValue$new()),
@@ -72,7 +71,6 @@ test_that("converted inherited and reference state stays read-only", {
     frequency = frequency_code("A")
   )
   schema <- structure$as_schema("statfin", "trade", version)
-  reference <- schema$reference
   before <- schema$as_list()
 
   expect_error(schema$object_type <- "series", "read-only")
@@ -84,18 +82,19 @@ test_that("converted inherited and reference state stays read-only", {
     schema$components[[1L]] <- TosiSchemaDimension$new("other"),
     "read-only"
   )
-  expect_error(schema$reference <- reference$clone(), "read-only")
-  expect_error(
-    schema$reference$connector_id <- connector_id("other"),
-    "read-only"
-  )
-  expect_error(schema$reference$object_id <- object_id("other"), "read-only")
-  expect_error(schema$reference$data_version <- version + 1, "read-only")
-  expect_identical(schema$reference, reference)
+  expect_error(schema$connector_id <- connector_id("other"), "read-only")
+  expect_error(schema$object_id <- object_id("other"), "read-only")
+  expect_error(schema$data_version <- version + 1, "read-only")
+  expect_error(schema$connector_id[1L] <- connector_id("other"), "read-only")
+  expect_error(schema$object_id[1L] <- object_id("other"), "read-only")
+  expect_error(schema$data_version[1L] <- version + 1, "read-only")
+  expect_identical(schema$connector_id, connector_id("statfin"))
+  expect_identical(schema$object_id, object_id("trade"))
+  expect_identical(schema$data_version, version)
   expect_identical(schema$as_list(), before)
 })
 
-test_that("source-bound construction retains structural and reference checks", {
+test_that("source-bound construction retains structural checks", {
   version <- as.POSIXct("2025-01-02", tz = "UTC")
   dimension <- TosiSchemaDimension$new("geo")
 
@@ -108,17 +107,6 @@ test_that("source-bound construction retains structural and reference checks", {
       lang = "en"
     ),
     "replaces_id",
-    class = "rlang_error"
-  )
-  expect_error(
-    TosiSchema$new(
-      "statfin",
-      "trade",
-      NULL,
-      components = list(dimension),
-      lang = "en"
-    ),
-    "data_version",
     class = "rlang_error"
   )
   schema <- TosiSchema$new(
@@ -175,8 +163,6 @@ test_that("binding matches construction and shares unchanged components", {
   expect_false(identical(schema, another))
   expect_identical(schema$as_list(), direct$as_list())
   expect_identical(another$as_list(), direct$as_list())
-  expect_r6_class(schema$reference, "TosiDataReference")
-  expect_identical(schema$reference$as_list(), direct$reference$as_list())
   expect_identical(schema$components, components)
   expect_identical(schema$components, structure$components)
   for (component in components) {
@@ -196,7 +182,7 @@ test_that("binding matches construction and shares unchanged components", {
   expect_false("reference" %in% names(structure))
 })
 
-test_that("bound schemas bind again without changing their reference", {
+test_that("bound schemas bind again without changing their source binding", {
   version <- as.POSIXct("2025-01-02", tz = "UTC")
   schema <- TosiSchema$new(
     "statfin",
@@ -205,7 +191,6 @@ test_that("bound schemas bind again without changing their reference", {
     components = list(TosiSchemaDimension$new("geo"), TosiSchemaValue$new()),
     lang = "en"
   )
-  reference <- schema$reference
   before <- schema$as_list()
   before_class <- class(schema)
 
@@ -218,65 +203,102 @@ test_that("bound schemas bind again without changing their reference", {
   expect_r6_class(rebound, "TosiSchema")
   expect_r6_class(rebound, "TosiStructure")
   expect_false(identical(rebound, schema))
-  expect_false(identical(rebound$reference, reference))
-  expect_identical(
-    rebound$reference$as_list(),
-    TosiDataReference$new("demo", "other", version + 1)$as_list()
-  )
+  expect_identical(rebound$connector_id, connector_id("demo"))
+  expect_identical(rebound$object_id, object_id("other"))
+  expect_identical(rebound$data_version, version + 1)
+  expect_identical(schema$connector_id, connector_id("statfin"))
+  expect_identical(schema$object_id, object_id("trade"))
+  expect_identical(schema$data_version, version)
   expect_identical(rebound$components, schema$components)
   expect_identical(
     rebound$as_list()[names(before) != "reference"],
     before[names(before) != "reference"]
   )
-  expect_identical(schema$reference, reference)
   expect_identical(schema$as_list(), before)
   expect_identical(class(schema), before_class)
 })
 
-test_that("binding retains reference identity and version checks", {
+test_that("schema construction reuses complete canonical ID constraints", {
   version <- as.POSIXct("2025-01-02", tz = "UTC")
+  components <- list(TosiSchemaValue$new())
+  for (field in c("connector_id", "object_id")) {
+    for (invalid in list(
+      NULL,
+      NA_character_,
+      "",
+      c("one", "two"),
+      "not/canonical"
+    )) {
+      arguments <- list(
+        connector_id = "statfin",
+        object_id = "population",
+        data_version = version,
+        components = components,
+        lang = "en"
+      )
+      arguments[field] <- list(invalid)
+      expect_error(
+        do.call(TosiSchema$new, arguments),
+        class = "rlang_error"
+      )
+    }
+  }
+  expect_error(TosiSchema$new(
+    object_id = "population",
+    data_version = version,
+    components = components,
+    lang = "en"
+  ))
+  expect_error(TosiSchema$new(
+    connector_id = "statfin",
+    data_version = version,
+    components = components,
+    lang = "en"
+  ))
+})
+
+test_that("schemas require a finite non-missing POSIXct scalar", {
+  version <- as.POSIXct("2025-01-02", tz = "UTC")
+  components <- list(TosiSchemaValue$new())
+  invalid_versions <- list(
+    NULL,
+    "2025-01-02",
+    as.Date("2025-01-02"),
+    c(version, version),
+    as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"),
+    as.POSIXct(Inf, origin = "1970-01-01", tz = "UTC")
+  )
+  for (invalid in invalid_versions) {
+    expect_error(
+      TosiSchema$new(
+        "statfin",
+        "population",
+        invalid,
+        components = components,
+        lang = "en"
+      ),
+      "data_version",
+      class = "rlang_error"
+    )
+  }
+  expect_error(TosiSchema$new(
+    "statfin",
+    "population",
+    components = components,
+    lang = "en"
+  ))
+})
+
+test_that("failed conversion leaves the structure unchanged", {
   structure <- TosiStructure$new(
     components = list(TosiSchemaValue$new()),
     lang = "en"
   )
   before <- structure$as_list()
-  invalid_bindings <- list(
-    list(
-      connector_id = "not/canonical",
-      object_id = "trade",
-      data_version = version
-    ),
-    list(
-      connector_id = "statfin",
-      object_id = "not/canonical",
-      data_version = version
-    ),
-    list(connector_id = "statfin", object_id = "trade", data_version = NULL),
-    list(
-      connector_id = "statfin",
-      object_id = "trade",
-      data_version = "2025-01-02"
-    )
-  )
-  patterns <- c(
-    "canonical platform ID",
-    "canonical platform ID",
+  expect_error(
+    structure$as_schema("statfin", "trade", NULL),
     "data_version",
-    "data_version"
+    class = "rlang_error"
   )
-  for (i in seq_along(invalid_bindings)) {
-    arguments <- invalid_bindings[[i]]
-    expect_error(
-      do.call(TosiDataReference$new, arguments),
-      patterns[[i]],
-      class = "rlang_error"
-    )
-    expect_error(
-      do.call(structure$as_schema, arguments),
-      patterns[[i]],
-      class = "rlang_error"
-    )
-  }
   expect_identical(structure$as_list(), before)
-  expect_false("reference" %in% names(structure))
 })

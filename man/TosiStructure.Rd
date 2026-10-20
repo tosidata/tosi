@@ -8,7 +8,7 @@
 identifiers, labels, roles, and available value domains, without requiring
 source identity or a source version. It retains language, frequency, and
 series-key information. \link{TosiSchema} inherits this structure and adds a
-source binding through its \verb{$reference} field. Both classes support the same
+canonical source identity and version. Both classes support the same
 structural methods. Fields are read-only; direct and nested replacement
 fails. Use \verb{$column_names()} to see the physical names for each column mode.
 
@@ -16,7 +16,7 @@ Use \code{structure$as_schema(connector_id, object_id, data_version)} to create 
 new source-bound schema. The receiver is unchanged and existing component
 instances are shared, not cloned. The inherited method on a bound schema
 also creates a new result with the supplied binding, without replacing the
-receiver's reference.
+receiver's source binding.
 
 Use \code{schema$component(id)} to obtain the existing component by its exact ID,
 and \code{schema$domain_table(id)} to inspect its complete domain. Every component
@@ -110,7 +110,7 @@ series-key component IDs.}
 \if{latex}{\out{\hypertarget{method-TosiStructure-as_schema}{}}}
 \subsection{\code{TosiStructure$as_schema()}}{
   Create a source-bound schema sharing the existing component instances.
-The receiver and its reference, if any, remain unchanged.
+The receiver and its source binding, if any, remain unchanged.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$as_schema(connector_id, object_id, data_version)}

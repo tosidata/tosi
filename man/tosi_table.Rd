@@ -35,7 +35,8 @@ Result scope is not a table column or schema component.
 }
 \details{
 \code{attr(x, "schema")} is a \link{TosiSchema}, directly usable through its
-inherited schema methods. Its \verb{$reference} holds the sole canonical source
-identity and version; these are not independently stored on the table.
+inherited schema methods. It holds the sole canonical source identity and
+version through \verb{$connector_id}, \verb{$object_id}, and \verb{$data_version}; these are
+not independently stored on the table.
 Metadata describes the result at delivery. Wrangling may alter or discard it.
 }

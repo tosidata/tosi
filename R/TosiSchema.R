@@ -406,7 +406,7 @@ TosiSchemaAttribute <- R6Class(
 #' identifiers, labels, roles, and available value domains, without requiring
 #' source identity or a source version. It retains language, frequency, and
 #' series-key information. [TosiSchema] inherits this structure and adds a
-#' source binding through its `$reference` field. Both classes support the same
+#' canonical source identity and version. Both classes support the same
 #' structural methods. Fields are read-only; direct and nested replacement
 #' fails. Use `$column_names()` to see the physical names for each column mode.
 #'
@@ -414,7 +414,7 @@ TosiSchemaAttribute <- R6Class(
 #' new source-bound schema. The receiver is unchanged and existing component
 #' instances are shared, not cloned. The inherited method on a bound schema
 #' also creates a new result with the supplied binding, without replacing the
-#' receiver's reference.
+#' receiver's source binding.
 #'
 #' Use `schema$component(id)` to obtain the existing component by its exact ID,
 #' and `schema$domain_table(id)` to inspect its complete domain. Every component
@@ -606,7 +606,7 @@ TosiStructure <- R6Class(
 
     #' @description
     #' Create a source-bound schema sharing the existing component instances.
-    #' The receiver and its reference, if any, remain unchanged.
+    #' The receiver and its source binding, if any, remain unchanged.
     #'
     #' @param connector_id Scalar canonical connector ID.
     #' @param object_id Scalar canonical object ID.
@@ -812,27 +812,31 @@ TosiStructure <- R6Class(
 
 #' Source-bound table structure
 #'
-#' `TosiSchema` inherits [TosiStructure] and associates its structural graph
-#' with one [TosiDataReference]. Construct it directly or use
+#' `TosiSchema` inherits [TosiStructure] and directly stores canonical source
+#' identity and version. Construct it directly or use
 #' `structure$as_schema(connector_id, object_id, data_version)` to bind an
 #' existing structure without changing it or cloning its components.
 #' Use `$component()`, `$domain_table()`, and
 #' `$column_names()` directly, without unwrapping another schema object.
-#' Canonical identity and source version are available only through
-#' `$reference$connector_id`, `$reference$object_id`, and
-#' `$reference$data_version`.
+#' Canonical identity and source version are available through read-only
+#' `$connector_id`, `$object_id`, and `$data_version` bindings.
 #'
 #' A `tosi_table` embeds this source-bound schema. Obtaining its `schema`
-#' attribute retains the source binding. The embedded reference is the sole
-#' authority for that binding; the table stores no independent identity or
-#' version copy. Metadata describes the delivered result, with no guarantee
-#' after table wrangling.
+#' attribute retains the source binding. The schema is the sole authority for
+#' that binding; the table stores no independent identity or version copy.
+#' Metadata describes the delivered result, with no guarantee after wrangling.
+#' `$as_list()` projects the source binding as an ordinary nested `reference`
+#' list; this projection is not independently authoritative state.
 #'
-#' Inherited fields, the reference binding, and reference fields are read-only.
-#' These shared model constructors are technical exports, not an external
-#' subclassing interface.
+#' Inherited fields and source-binding fields are read-only; direct and nested
+#' replacement fails. The version's shape is checked at construction; the
+#' producer establishes which source input it describes. These shared model
+#' constructors are technical exports, not an external subclassing interface.
 #'
-#' @field reference The schema's `TosiDataReference`.
+#' @field connector_id Read-only scalar canonical connector ID vector.
+#' @field object_id Read-only scalar canonical object ID vector.
+#' @field data_version Read-only finite non-missing scalar `POSIXct` source
+#'   version.
 #' @export
 TosiSchema <- R6Class(
   "TosiSchema",
@@ -840,7 +844,7 @@ TosiSchema <- R6Class(
   portable = FALSE,
   public = list(
     #' @description
-    #' Construct the structural graph and its canonical source reference.
+    #' Construct the structural graph and its canonical source binding.
     #'
     #' @param connector_id Scalar canonical connector ID.
     #' @param object_id Scalar canonical object ID.
@@ -864,7 +868,14 @@ TosiSchema <- R6Class(
       frequency = NULL,
       series_key = NULL
     ) {
-      reference <- TosiDataReference$new(connector_id, object_id, data_version)
+      # Validate before function-position lookup because the accepted formal
+      # names shadow the canonical constructor bindings.
+      validate_scalar_string(connector_id)
+      validate_scalar_string(object_id)
+      canonical_connector_id <- connector_id(connector_id)
+      canonical_object_id <- object_id(object_id)
+      validate_required_data_version(data_version, "data_version")
+
       super$initialize(
         components = components,
         object_type = object_type,
@@ -872,7 +883,9 @@ TosiSchema <- R6Class(
         frequency = frequency,
         series_key = series_key
       )
-      private$.reference <- reference
+      private$.connector_id <- canonical_connector_id
+      private$.object_id <- canonical_object_id
+      private$.data_version <- data_version
     },
 
     #' @description
@@ -881,9 +894,9 @@ TosiSchema <- R6Class(
     print = function() {
       cat(
         "<TosiSchema> ",
-        as.character(self$reference$connector_id),
+        as.character(self$connector_id),
         "/",
-        as.character(self$reference$object_id),
+        as.character(self$object_id),
         " (",
         self$lang,
         ")\n",
@@ -891,7 +904,7 @@ TosiSchema <- R6Class(
       )
       cat(
         "  data_version: ",
-        format(self$reference$data_version, usetz = TRUE),
+        format(self$data_version, usetz = TRUE),
         "\n",
         sep = ""
       )
@@ -900,21 +913,44 @@ TosiSchema <- R6Class(
     },
 
     #' @description
-    #' Return structural fields and the composed reference as named lists.
+    #' Return structural fields and the source binding as named lists.
     #' @return A named list containing schema fields, components, and reference.
     as_list = function() {
-      c(super$as_list(), list(reference = self$reference$as_list()))
+      c(
+        super$as_list(),
+        list(
+          reference = list(
+            connector_id = self$connector_id,
+            object_id = self$object_id,
+            data_version = self$data_version
+          )
+        )
+      )
     }
   ),
   private = list(
-    .reference = NULL
+    .connector_id = NULL,
+    .object_id = NULL,
+    .data_version = NULL
   ),
   active = list(
-    reference = function(value) {
+    connector_id = function(value) {
       if (!missing(value)) {
-        cli_abort("{.field reference} is read-only.")
+        cli_abort("{.field connector_id} is read-only.")
       }
-      private$.reference
+      private$.connector_id
+    },
+    object_id = function(value) {
+      if (!missing(value)) {
+        cli_abort("{.field object_id} is read-only.")
+      }
+      private$.object_id
+    },
+    data_version = function(value) {
+      if (!missing(value)) {
+        cli_abort("{.field data_version} is read-only.")
+      }
+      private$.data_version
     }
   )
 )
