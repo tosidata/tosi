@@ -45,7 +45,9 @@
 - [`TosiMetadata`](https://tosidata.github.io/tosi/reference/TosiMetadata.md)
   : Descriptive metadata
 - [`TosiSchema`](https://tosidata.github.io/tosi/reference/TosiSchema.md)
-  : Table structure
+  : Source-bound table structure
+- [`TosiStructure`](https://tosidata.github.io/tosi/reference/TosiStructure.md)
+  : Source-independent table structure
 - [`TosiProvenance`](https://tosidata.github.io/tosi/reference/TosiProvenance.md)
   : Provenance history
 - [`TosiSourceReference`](https://tosidata.github.io/tosi/reference/TosiSourceReference.md)

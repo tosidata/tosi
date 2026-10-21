@@ -17,7 +17,7 @@ Result scope is not a table column or schema component.'></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tosi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,6 +85,14 @@ embedded schema using the table's stored column mode.</p></dd>
 <p><code>as_tibble()</code> returns an ordinary tibble. Conversion retains ordinary
 tibble metadata behavior; the schema is not reduced or rebuilt, and no
 metadata guarantee is made after conversion.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>attr(x, "schema")</code> is a <a href="TosiSchema.html">TosiSchema</a>, directly usable through its
+inherited schema methods. It holds the sole canonical source identity and
+version through <code>$connector_id</code>, <code>$object_id</code>, and <code>$data_version</code>; these are
+not independently stored on the table.
+Metadata describes the result at delivery. Wrangling may alter or discard it.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

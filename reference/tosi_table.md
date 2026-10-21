@@ -41,3 +41,13 @@ as_tibble(x, ..., drop_replaced = FALSE)
 `as_tibble()` returns an ordinary tibble. Conversion retains ordinary
 tibble metadata behavior; the schema is not reduced or rebuilt, and no
 metadata guarantee is made after conversion.
+
+## Details
+
+`attr(x, "schema")` is a
+[TosiSchema](https://tosidata.github.io/tosi/reference/TosiSchema.md),
+directly usable through its inherited schema methods. It holds the sole
+canonical source identity and version through `$connector_id`,
+`$object_id`, and `$data_version`; these are not independently stored on
+the table. Metadata describes the result at delivery. Wrangling may
+alter or discard it.

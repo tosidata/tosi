@@ -1,6 +1,13 @@
 # Changelog
 
-## tosi (development version)
+## tosi 0.1.3
+
+- Replace calls to the removed `physical_column_names()` function with
+  `schema$column_names(col_mode)`.
+- Older saved results and old-server responses may fail with
+  `$column_names()` or `as_tibble(..., drop_replaced = TRUE)`. Re-fetch
+  results from an updated server, or retain the older client for those
+  results.
 
 ## tosi 0.1.2
 
@@ -21,4 +28,4 @@
 
 ## tosi 0.1.0
 
-- Publish in GitHub’
+- Publish in GitHub
