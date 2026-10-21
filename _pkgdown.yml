@@ -30,6 +30,7 @@ reference:
       - TosiHelp
       - TosiMetadata
       - TosiSchema
+      - TosiStructure
       - TosiProvenance
       - TosiSourceReference
       - TosiSourceDocument
