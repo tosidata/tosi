@@ -936,3 +936,24 @@ test_that("results end stream processing and missing results fail", {
   expect_identical(conditionMessage(error), original)
   expect_length(peer$get_requests, length(cases))
 })
+
+
+test_that("service messages retain literal braces and cli markup", {
+  withr::local_envvar(c(
+    TOSI_URL = "https://example.invalid",
+    TOSI_TOKEN = "token"
+  ))
+  peer <- local_result_service("result")
+  text <- "Selection {missing_column}: {.strong original}"
+  encoded <- jsonlite::toJSON(list(message = text), auto_unbox = TRUE)
+  peer$sse_body <- paste0(
+    "event: progress\ndata: ",
+    encoded,
+    "\n\n",
+    peer$sse_body
+  )
+  expect_message(expect_identical(tosi_help(), "result"), text, fixed = TRUE)
+  peer$sse_body <- paste0("event: error\ndata: ", encoded, "\n\n")
+  error <- tryCatch(suppressMessages(tosi_help()), error = identity)
+  expect_identical(conditionMessage(error), text)
+})

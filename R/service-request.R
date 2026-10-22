@@ -77,9 +77,9 @@ perform_service_request <- function(operation, args, call = caller_env()) {
 
     value <- parse_json(event[["data"]], simplifyVector = FALSE)
     if (event[["type"]] == "progress") {
-      cli_inform(value[["message"]])
+      cli_inform("{value[['message']]}")
     } else if (event[["type"]] == "error") {
-      cli_abort(value[["message"]], call = call)
+      cli_abort("{value[['message']]}", call = call)
     } else if (event[["type"]] == "result") {
       result <- value
       break
