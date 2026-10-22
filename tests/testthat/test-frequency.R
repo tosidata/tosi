@@ -136,9 +136,23 @@ test_that("frequency-code vectors retain pillar presentation", {
 })
 
 test_that("validate_frequency_code() enforces class invariants", {
-  malformed <- new_frequency_code(100L)
+  malformed <- new_frequency_code(1L)
   attr(malformed, "levels") <- "annual"
 
   expect_true(is_frequency_code(malformed))
   expect_error(validate_frequency_code(malformed), class = "rlang_error")
+})
+
+
+test_that("frequency positions cannot create corrupt factors", {
+  for (position in c(0L, -1L, 36L, .Machine$integer.max)) {
+    expect_error(
+      new_frequency_code(c(1L, position)),
+      "canonical level positions"
+    )
+  }
+  expect_identical(
+    as.character(new_frequency_code(c(1L, 35L, NA_integer_))),
+    c("A", "N15", NA_character_)
+  )
 })

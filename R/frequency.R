@@ -40,6 +40,11 @@
 #' @export
 new_frequency_code <- function(x = integer()) {
   vec_assert(x, integer())
+  if (any(!is.na(x) & (x < 1L | x > length(.frequency_code_levels)))) {
+    cli_abort(
+      "{.arg x} must contain canonical level positions or missing values."
+    )
+  }
 
   new_factor(
     x,
