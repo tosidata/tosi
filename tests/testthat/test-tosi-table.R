@@ -217,3 +217,21 @@ test_that("preview table printing guides without emitting a condition", {
   ))
   expect_false("result_scope" %in% names(preview))
 })
+
+
+test_that("table construction retains rows when there are no physical columns", {
+  schema <- TosiSchema$new(
+    connector_id = "statfin",
+    object_id = "test_table",
+    data_version = as.POSIXct("2024-01-01", tz = "UTC"),
+    components = list(TosiSchemaValue$new()),
+    object_type = "table",
+    lang = "en"
+  )
+  for (rows in c(0L, 3L)) {
+    data <- tibble::tibble(.rows = rows)
+    table <- new_tosi_table(data, schema, "ids")
+    expect_identical(dim(table), c(rows, 0L))
+    expect_identical(dim(tibble::as_tibble(table)), c(rows, 0L))
+  }
+})

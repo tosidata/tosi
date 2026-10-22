@@ -73,6 +73,7 @@ new_tosi_table <- function(
   # a second metadata authority on the artifact.
   tibble::new_tibble(
     as.list(x),
+    nrow = nrow(x),
     schema = schema,
     col_mode = col_mode,
     title = title,
