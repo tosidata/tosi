@@ -414,7 +414,12 @@ TosiSchemaAttribute <- R6Class(
 #' new source-bound schema. The receiver is unchanged and existing component
 #' instances are shared, not cloned. The inherited method on a bound schema
 #' also creates a new result with the supplied binding, without replacing the
-#' receiver's source binding.
+#' receiver's source binding. Supplied actual counts are retained.
+#'
+#' `$n_observations()` and `$n_series()` default to source-established actual
+#' counts for this object's scope. `kind = "potential"` counts logical grid
+#' positions, not occupancy. Unknown is `NA_real_`; known empty grids are zero.
+#' Neither kind falls back to the other, and neither performs retrieval.
 #'
 #' Use `schema$component(id)` to obtain the existing component by its exact ID,
 #' and `schema$domain_table(id)` to inspect its complete domain. Every component
@@ -462,6 +467,10 @@ TosiStructure <- R6Class(
     #' @param frequency Optional scalar known frequency code.
     #' @param series_key Optional ordered character vector of eligible
     #'   series-key component IDs.
+    #' @param observation_count Optional actual observation count for this
+    #'   object's scope; `NULL` or `NA_real_` means unknown.
+    #' @param series_count Optional actual series count for this object's
+    #'   scope; `NULL` or `NA_real_` means unknown.
     #'
     #' @return A new `TosiStructure` object.
     initialize = function(
@@ -469,7 +478,9 @@ TosiStructure <- R6Class(
       object_type = NULL,
       lang = NULL,
       frequency = NULL,
-      series_key = NULL
+      series_key = NULL,
+      observation_count = NULL,
+      series_count = NULL
     ) {
       validate_scalar_string(object_type, allow_null = TRUE)
       if (!is.null(object_type) && !object_type %in% c("table", "series")) {
@@ -564,12 +575,8 @@ TosiStructure <- R6Class(
       }
 
       ## Validate series_key is a subset of eligible components
-      replaced_ids <- map_chr(replacement_components, "replaces_id")
-      eligible_components <- keep(components, \(component) {
-        (inherits(component, "TosiSchemaDimension") &&
-          !component$id %in% replaced_ids) ||
-          inherits(component, "TosiSchemaFrequency")
-      })
+      eligible_components <- private$observation_axes(components) |>
+        discard(\(component) inherits(component, "TosiSchemaTime"))
       eligible_ids <- map_chr(eligible_components, \(component) component$id)
       has_time <- any(map_lgl(components, inherits, "TosiSchemaTime"))
       has_unknown <- any(map_lgl(
@@ -602,6 +609,38 @@ TosiStructure <- R6Class(
       private$.components <- components
       private$.frequency <- frequency
       private$.series_key <- resolved_series_key
+      private$.observation_count <- as.double(observation_count %||% NA_real_)
+      private$.series_count <- as.double(series_count %||% NA_real_)
+    },
+
+    #' @description
+    #' Count actual observations or potential positions across logical axes,
+    #' including Time and counting canonical replacements once. Value,
+    #' Attributes and scalar frequency are not axes.
+    #' @param kind One of `"actual"` (default) or `"potential"`.
+    #' @return One numeric count, or `NA_real_` when unknown.
+    n_observations = function(kind = c("actual", "potential")) {
+      kind <- match.arg(kind)
+      if (kind == "actual") {
+        return(private$.observation_count)
+      }
+      private$grid_size(private$observation_axes(self$components))
+    },
+
+    #' @description
+    #' Count actual series or potential positions across the resolved
+    #' `series_key`. An unavailable key is unknown; an empty key has one slot.
+    #' @param kind One of `"actual"` (default) or `"potential"`.
+    #' @return One numeric count, or `NA_real_` when unknown.
+    n_series = function(kind = c("actual", "potential")) {
+      kind <- match.arg(kind)
+      if (kind == "actual") {
+        return(private$.series_count)
+      }
+      if (is.null(self$series_key)) {
+        return(NA_real_)
+      }
+      private$grid_size(map(self$series_key, \(id) self$component(id)))
     },
 
     #' @description
@@ -621,7 +660,9 @@ TosiStructure <- R6Class(
         object_type = self$object_type,
         lang = self$lang,
         frequency = self$frequency,
-        series_key = self$series_key
+        series_key = self$series_key,
+        observation_count = private$.observation_count,
+        series_count = private$.series_count
       )
     },
 
@@ -714,15 +755,32 @@ TosiStructure <- R6Class(
 
     #' @description
     #' Return the schema as a named list, with components as named lists.
+    #' Count groups always contain both `actual` and `potential`; unknown
+    #' counts are retained as `NULL` entries.
     #'
-    #' @return A named list containing the schema fields and components.
+    #' @return A named list containing the schema fields, components and
+    #'   `observation_count` and `series_count` groups.
     as_list = function() {
       list(
         object_type = self$object_type,
         lang = self$lang,
         frequency = self$frequency,
         series_key = self$series_key,
-        components = map(self$components, \(component) component$as_list())
+        components = map(self$components, \(component) component$as_list()),
+        observation_count = map(
+          list(
+            actual = self$n_observations(),
+            potential = self$n_observations("potential")
+          ),
+          \(count) if (!is.na(count)) count
+        ),
+        series_count = map(
+          list(
+            actual = self$n_series(),
+            potential = self$n_series("potential")
+          ),
+          \(count) if (!is.na(count)) count
+        )
       )
     }
   ),
@@ -732,6 +790,32 @@ TosiStructure <- R6Class(
     .components = NULL,
     .frequency = NULL,
     .series_key = NULL,
+    .observation_count = NA_real_,
+    .series_count = NA_real_,
+    observation_axes = function(components) {
+      canonical <- keep(components, \(component) {
+        inherits(component, "TosiSchemaTime") ||
+          inherits(component, "TosiSchemaFrequency")
+      })
+      replacements <- keep(canonical, \(component) {
+        !is.null(component$replaces_id)
+      })
+      replaced_ids <- map_chr(replacements, "replaces_id")
+      keep(components, \(component) {
+        (inherits(component, "TosiSchemaDimension") &&
+          !component$id %in% replaced_ids) ||
+          inherits(component, "TosiSchemaTime") ||
+          inherits(component, "TosiSchemaFrequency")
+      })
+    },
+    grid_size = function(axes) {
+      sizes <- map_dbl(axes, \(axis) {
+        domain <- axis$domain_table()
+        if (is.null(domain)) NA_real_ else nrow(domain)
+      })
+      # A known empty axis makes the grid empty even if another is unavailable.
+      if (any(sizes == 0, na.rm = TRUE)) 0 else prod(sizes)
+    },
     print_structure = function() {
       if (!is.null(self$object_type)) {
         cat("  object_type: ", self$object_type, "\n", sep = "")
@@ -818,6 +902,7 @@ TosiStructure <- R6Class(
 #' existing structure without changing it or cloning its components.
 #' Use `$component()`, `$domain_table()`, and
 #' `$column_names()` directly, without unwrapping another schema object.
+#' Count methods and projection follow [TosiStructure].
 #' Canonical identity and source version are available through read-only
 #' `$connector_id`, `$object_id`, and `$data_version` bindings.
 #'
@@ -858,6 +943,8 @@ TosiSchema <- R6Class(
     #' @param frequency Optional scalar known frequency code.
     #' @param series_key Optional ordered character vector of eligible
     #'   series-key component IDs.
+    #' @param observation_count,series_count Optional actual counts; see
+    #'   [TosiStructure].
     #' @return A new `TosiSchema` object.
     initialize = function(
       connector_id,
@@ -867,7 +954,9 @@ TosiSchema <- R6Class(
       object_type = NULL,
       lang = NULL,
       frequency = NULL,
-      series_key = NULL
+      series_key = NULL,
+      observation_count = NULL,
+      series_count = NULL
     ) {
       # Validate before function-position lookup because the accepted formal
       # names shadow the canonical constructor bindings.
@@ -882,7 +971,9 @@ TosiSchema <- R6Class(
         object_type = object_type,
         lang = lang,
         frequency = frequency,
-        series_key = series_key
+        series_key = series_key,
+        observation_count = observation_count,
+        series_count = series_count
       )
       private$.connector_id <- canonical_connector_id
       private$.object_id <- canonical_object_id
@@ -915,10 +1006,8 @@ TosiSchema <- R6Class(
 
     #' @description
     #' Return source-binding fields followed by structural fields.
-    #' @return A named list with `connector_id`, `object_id`, `data_version`,
-    #'   `object_type`, `lang`, `frequency`, `series_key`, and `components`,
-    #'   in that order. Components are projected as named lists; other fields
-    #'   retain their values, types, and attributes.
+    #' @return A named list with `connector_id`, `object_id` and `data_version`
+    #'   followed by the [TosiStructure] projection.
     as_list = function() {
       c(
         list(

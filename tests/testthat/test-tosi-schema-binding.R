@@ -60,7 +60,9 @@ test_that("source-bound schemas inherit the structural graph and methods", {
       "lang",
       "frequency",
       "series_key",
-      "components"
+      "components",
+      "observation_count",
+      "series_count"
     )
   )
   expect_identical(

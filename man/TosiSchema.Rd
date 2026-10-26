@@ -10,6 +10,7 @@ identity and version. Construct it directly or use
 existing structure without changing it or cloning its components.
 Use \verb{$component()}, \verb{$domain_table()}, and
 \verb{$column_names()} directly, without unwrapping another schema object.
+Count methods and projection follow \link{TosiStructure}.
 Canonical identity and source version are available through read-only
 \verb{$connector_id}, \verb{$object_id}, and \verb{$data_version} bindings.
 
@@ -50,12 +51,14 @@ version.}
     \item \href{#method-TosiSchema-clone}{\code{TosiSchema$clone()}}
   }
 }
-\if{html}{\out{<details open><summary>Inherited methods</summary>
+\if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="as_schema"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-as_schema'><code>TosiStructure$as_schema()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="column_names"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-column_names'><code>TosiStructure$column_names()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="component"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-component'><code>TosiStructure$component()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="domain_table"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-domain_table'><code>TosiStructure$domain_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="n_observations"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-n_observations'><code>TosiStructure$n_observations()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="n_series"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-n_series'><code>TosiStructure$n_series()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}
@@ -73,7 +76,9 @@ version.}
   object_type = NULL,
   lang = NULL,
   frequency = NULL,
-  series_key = NULL
+  series_key = NULL,
+  observation_count = NULL,
+  series_count = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -91,6 +96,8 @@ component objects.}
       \item{\code{frequency}}{Optional scalar known frequency code.}
       \item{\code{series_key}}{Optional ordered character vector of eligible
 series-key component IDs.}
+      \item{\code{observation_count, series_count}}{Optional actual counts; see
+\link{TosiStructure}.}
     }
     \if{html}{\out{</div>}}
   }
@@ -125,10 +132,8 @@ series-key component IDs.}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list with \code{connector_id}, \code{object_id}, \code{data_version},
-\code{object_type}, \code{lang}, \code{frequency}, \code{series_key}, and \code{components},
-in that order. Components are projected as named lists; other fields
-retain their values, types, and attributes.
+    A named list with \code{connector_id}, \code{object_id} and \code{data_version}
+followed by the \link{TosiStructure} projection.
   }
 }
 

@@ -2,8 +2,12 @@
 #'
 #' [tosi_metadata()] returns a `TosiMetadata` containing the title, source,
 #' language, version, and optional description and source-reference cards.
-#' Fields are read-only; direct and nested replacement fails. `$as_list()`
-#' returns the metadata as a named list.
+#' Fields are read-only; direct and nested replacement fails. `$description_text()`
+#' derives complete source text, including headings, in section order. `$as_list()`
+#' recursively projects sections and compact reference cards to ordinary lists.
+#' `$format()` and `$print()` show a compact summary. Set `details = TRUE`
+#' to include the complete source description and compact reference cards,
+#' without retrieving the referenced documents.
 #'
 #' @field connector_id Scalar canonical connector ID vector.
 #' @field object_id Scalar canonical object ID vector.
@@ -12,7 +16,8 @@
 #' @field lang Natural-language code used by scalar labels.
 #' @field title Human-facing object title.
 #' @field source_label Human-facing source label.
-#' @field description Optional object description.
+#' @field description Ordinary ordered list of [TosiDescriptionSection] objects;
+#'   empty when absent. Existing instances are retained without cloning.
 #' @field subject_area Optional subject-area label.
 #' @field next_update Optional next-update date, timestamp, or string.
 #' @field source_references A [TosiSourceReference] card or list of cards,
@@ -34,7 +39,11 @@ TosiMetadata <- R6Class(
     #' @param title Human-facing object title.
     #' @param source_label Human-facing source label.
     #' @param source_object_id Optional source-native object identifier.
-    #' @param description Optional object description.
+    #' @param description `NULL`, plain scalar text, one [TosiDescriptionSection],
+    #'   or an ordinary ordered list of section instances. `NULL` becomes an empty
+    #'   list; text becomes one unclassified section; a single section becomes a
+    #'   one-element list. Collections omit `NULL` entries and retain section
+    #'   instances and order. No headings or types are inferred from prose.
     #' @param subject_area Optional subject-area label.
     #' @param next_update Optional next-update date, timestamp, or string.
     #' @param source_references Genuine compact `TosiSourceReference` card or
@@ -71,12 +80,6 @@ TosiMetadata <- R6Class(
       validate_natural_language(lang, "lang")
       validate_scalar_string(title, arg = "title")
       validate_scalar_string(source_label, arg = "source_label")
-      validate_scalar_string(
-        description,
-        allow_empty = TRUE,
-        allow_null = TRUE,
-        arg = "description"
-      )
       validate_scalar_string(
         subject_area,
         allow_empty = TRUE,
@@ -117,7 +120,12 @@ TosiMetadata <- R6Class(
       private$.lang <- lang
       private$.title <- title
       private$.source_label <- source_label
-      private$.description <- description
+      if (is.character(description)) {
+        description <- list(TosiDescriptionSection$new(text = description))
+      } else if (inherits(description, "TosiDescriptionSection")) {
+        description <- list(description)
+      }
+      private$.description <- discard(description %||% list(), is.null)
       private$.subject_area <- subject_area
       private$.next_update <- next_update
       private$.source_references <- source_references
@@ -126,11 +134,10 @@ TosiMetadata <- R6Class(
     },
 
     #' @description
-    #' Return the metadata as a named list, with source-reference cards as
-    #' named lists.
+    #' Return the metadata as a named list, recursively projecting description
+    #' sections and source-reference cards to named lists.
     #'
-    #' @return A named list containing the metadata fields and source
-    #'   references.
+    #' @return A named list containing ordinary metadata, sections and cards.
     as_list = function() {
       list(
         connector_id = self$connector_id,
@@ -140,7 +147,7 @@ TosiMetadata <- R6Class(
         lang = self$lang,
         title = self$title,
         source_label = self$source_label,
-        description = self$description,
+        description = map(self$description, \(section) section$as_list()),
         subject_area = self$subject_area,
         next_update = self$next_update,
         source_references = map(
@@ -148,6 +155,73 @@ TosiMetadata <- R6Class(
           \(reference) reference$as_list()
         )
       )
+    },
+
+    #' @description
+    #' Extract all source text and supplied headings in section order, without
+    #' retrieval, translation or classification.
+    #'
+    #' @return A scalar character string; `""` when no sections are present.
+    description_text = function() {
+      sections <- map_chr(self$description, \(section) {
+        paste(c(section$title, section$text), collapse = "\n")
+      })
+      paste(sections, collapse = "\n\n")
+    },
+
+    #' @description
+    #' Format a compact summary or include the complete source description
+    #' and compact reference cards. Description headings and section order
+    #' are preserved.
+    #'
+    #' @param details Include description sections and reference cards.
+    #' @return A character vector of display lines.
+    format = function(details = FALSE) {
+      display_time <- function(value) {
+        if (inherits(value, "POSIXt")) {
+          base::format(value, "%Y-%m-%d %H:%M:%OS6 UTC", tz = "UTC")
+        } else {
+          as.character(value)
+        }
+      }
+
+      c(
+        glue("<TosiMetadata> {self$connector_id}/{self$object_id}"),
+        glue("Title: {self$title}"),
+        glue("Source: {self$source_label}"),
+        glue("Language: {self$lang}"),
+        glue("Source version: {display_time(self$data_version)}"),
+        if (details && !is.null(self$source_object_id)) {
+          glue("Source object: {self$source_object_id}")
+        },
+        if (!is.null(self$subject_area) && nzchar(self$subject_area)) {
+          glue("Subject area: {self$subject_area}")
+        },
+        if (!is.null(self$next_update)) {
+          glue("Next update: {display_time(self$next_update)}")
+        },
+        glue("Description sections: {length(self$description)}"),
+        if (details && length(self$description) > 0L) {
+          c("", self$description_text())
+        },
+        glue("Source references: {length(self$source_references)}"),
+        if (details) {
+          unlist(
+            map(self$source_references, \(reference) c("", reference$format())),
+            use.names = FALSE
+          )
+        }
+      )
+    },
+
+    #' @description
+    #' Print the formatted metadata without retrieving referenced documents.
+    #'
+    #' @param ... Arguments passed to `$format()`.
+    #' @return The metadata object, invisibly.
+    print = function(...) {
+      cat(self$format(...), sep = "\n")
+      invisible(self)
     }
   ),
   private = list(

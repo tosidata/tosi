@@ -57,7 +57,7 @@ test_that("TosiMetadata projects read-only values and compact cards", {
       names(TosiMetadata$public_methods),
       c("initialize", "clone")
     ),
-    "as_list"
+    c("as_list", "description_text", "format", "print")
   )
 
   candidate <- metadata$clone()
@@ -106,4 +106,74 @@ test_that("TosiMetadata rejects resolved documents as compact cards", {
     ),
     class = "rlang_error"
   )
+})
+
+test_that("metadata normalizes descriptions once and extracts complete source text", {
+  new_metadata <- function(description = NULL) {
+    TosiMetadata$new(
+      "mock",
+      "pop",
+      as.POSIXct("2025-01-01", tz = "UTC"),
+      "en",
+      "Population",
+      "Source",
+      description = description
+    )
+  }
+  sections <- list(
+    TosiDescriptionSection$new("Source context"),
+    NULL,
+    TosiDescriptionSection$new(
+      "Survey estimates.",
+      title = "Methodology",
+      type = "methodology"
+    ),
+    TosiDescriptionSection$new("Sampling uncertainty.", title = "Limitations"),
+    TosiDescriptionSection$new("Survey design.", type = "methodology")
+  )
+  metadata <- new_metadata(sections)
+  expect_identical(class(metadata$description), "list")
+  expect_identical(metadata$description, sections[c(1, 3, 4, 5)])
+  expect_identical(metadata$description[[2]]$type, "methodology")
+  expect_null(metadata$description[[3]]$type)
+  expect_identical(
+    metadata$description_text(),
+    paste0(
+      "Source context\n\nMethodology\nSurvey estimates.\n\n",
+      "Limitations\nSampling uncertainty.\n\nSurvey design."
+    )
+  )
+  expect_identical(
+    metadata$as_list()$description,
+    list(
+      list(text = "Source context"),
+      list(
+        text = "Survey estimates.",
+        title = "Methodology",
+        type = "methodology"
+      ),
+      list(text = "Sampling uncertainty.", title = "Limitations"),
+      list(text = "Survey design.", type = "methodology")
+    )
+  )
+  expect_error(metadata$description <- list(), "read-only")
+  expect_error(metadata$description[[1]] <- sections[[3]], "read-only")
+  expect_error(metadata$description[[1]]$text <- "Changed", "read-only")
+  local_copy <- metadata$description
+  expect_identical(local_copy[[1]], sections[[1]])
+  expect_error(local_copy[[1]]$text <- "Local edit", "read-only")
+  expect_identical(metadata$description[[1]]$text, "Source context")
+
+  single <- new_metadata(sections[[1]])
+  expect_identical(single$description, list(sections[[1]]))
+  plain <- new_metadata("Limitations: mixed source prose.")
+  expect_r6_class(plain$description[[1]], "TosiDescriptionSection")
+  expect_identical(
+    plain$as_list()$description,
+    list(list(text = "Limitations: mixed source prose."))
+  )
+  expect_identical(plain$description_text(), "Limitations: mixed source prose.")
+  expect_identical(new_metadata()$description, list())
+  expect_identical(new_metadata(list(NULL))$description, list())
+  expect_identical(new_metadata()$description_text(), "")
 })

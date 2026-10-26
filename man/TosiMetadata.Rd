@@ -6,8 +6,12 @@
 \description{
 \code{\link[=tosi_metadata]{tosi_metadata()}} returns a \code{TosiMetadata} containing the title, source,
 language, version, and optional description and source-reference cards.
-Fields are read-only; direct and nested replacement fails. \verb{$as_list()}
-returns the metadata as a named list.
+Fields are read-only; direct and nested replacement fails. \verb{$description_text()}
+derives complete source text, including headings, in section order. \verb{$as_list()}
+recursively projects sections and compact reference cards to ordinary lists.
+\verb{$format()} and \verb{$print()} show a compact summary. Set \code{details = TRUE}
+to include the complete source description and compact reference cards,
+without retrieving the referenced documents.
 }
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
@@ -26,7 +30,8 @@ returns the metadata as a named list.
 
     \item{\code{source_label}}{Human-facing source label.}
 
-    \item{\code{description}}{Optional object description.}
+    \item{\code{description}}{Ordinary ordered list of \link{TosiDescriptionSection} objects;
+empty when absent. Existing instances are retained without cloning.}
 
     \item{\code{subject_area}}{Optional subject-area label.}
 
@@ -43,6 +48,9 @@ one-element list.}
   \itemize{
     \item \href{#method-TosiMetadata-initialize}{\code{TosiMetadata$new()}}
     \item \href{#method-TosiMetadata-as_list}{\code{TosiMetadata$as_list()}}
+    \item \href{#method-TosiMetadata-description_text}{\code{TosiMetadata$description_text()}}
+    \item \href{#method-TosiMetadata-format}{\code{TosiMetadata$format()}}
+    \item \href{#method-TosiMetadata-print}{\code{TosiMetadata$print()}}
     \item \href{#method-TosiMetadata-clone}{\code{TosiMetadata$clone()}}
   }
 }
@@ -78,7 +86,11 @@ one-element list.}
       \item{\code{title}}{Human-facing object title.}
       \item{\code{source_label}}{Human-facing source label.}
       \item{\code{source_object_id}}{Optional source-native object identifier.}
-      \item{\code{description}}{Optional object description.}
+      \item{\code{description}}{\code{NULL}, plain scalar text, one \link{TosiDescriptionSection},
+or an ordinary ordered list of section instances. \code{NULL} becomes an empty
+list; text becomes one unclassified section; a single section becomes a
+one-element list. Collections omit \code{NULL} entries and retain section
+instances and order. No headings or types are inferred from prose.}
       \item{\code{subject_area}}{Optional subject-area label.}
       \item{\code{next_update}}{Optional next-update date, timestamp, or string.}
       \item{\code{source_references}}{Genuine compact \code{TosiSourceReference} card or
@@ -95,16 +107,77 @@ list of cards.}
 \if{html}{\out{<a id="method-TosiMetadata-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiMetadata-as_list}{}}}
 \subsection{\code{TosiMetadata$as_list()}}{
-  Return the metadata as a named list, with source-reference cards as
-named lists.
+  Return the metadata as a named list, recursively projecting description
+sections and source-reference cards to named lists.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiMetadata$as_list()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the metadata fields and source
-references.
+    A named list containing ordinary metadata, sections and cards.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiMetadata-description_text"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiMetadata-description_text}{}}}
+\subsection{\code{TosiMetadata$description_text()}}{
+  Extract all source text and supplied headings in section order, without
+retrieval, translation or classification.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiMetadata$description_text()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A scalar character string; \code{""} when no sections are present.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiMetadata-format"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiMetadata-format}{}}}
+\subsection{\code{TosiMetadata$format()}}{
+  Format a compact summary or include the complete source description
+and compact reference cards. Description headings and section order
+are preserved.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiMetadata$format(details = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{details}}{Include description sections and reference cards.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A character vector of display lines.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiMetadata-print"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiMetadata-print}{}}}
+\subsection{\code{TosiMetadata$print()}}{
+  Print the formatted metadata without retrieving referenced documents.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiMetadata$print(...)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{...}}{Arguments passed to \verb{$format()}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The metadata object, invisibly.
   }
 }
 

@@ -16,7 +16,12 @@ Use \code{structure$as_schema(connector_id, object_id, data_version)} to create 
 new source-bound schema. The receiver is unchanged and existing component
 instances are shared, not cloned. The inherited method on a bound schema
 also creates a new result with the supplied binding, without replacing the
-receiver's source binding.
+receiver's source binding. Supplied actual counts are retained.
+
+\verb{$n_observations()} and \verb{$n_series()} default to source-established actual
+counts for this object's scope. \code{kind = "potential"} counts logical grid
+positions, not occupancy. Unknown is \code{NA_real_}; known empty grids are zero.
+Neither kind falls back to the other, and neither performs retrieval.
 
 Use \code{schema$component(id)} to obtain the existing component by its exact ID,
 and \code{schema$domain_table(id)} to inspect its complete domain. Every component
@@ -61,6 +66,8 @@ Component constructors are technical exports, not an extension interface.
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-TosiStructure-initialize}{\code{TosiStructure$new()}}
+    \item \href{#method-TosiStructure-n_observations}{\code{TosiStructure$n_observations()}}
+    \item \href{#method-TosiStructure-n_series}{\code{TosiStructure$n_series()}}
     \item \href{#method-TosiStructure-as_schema}{\code{TosiStructure$as_schema()}}
     \item \href{#method-TosiStructure-print}{\code{TosiStructure$print()}}
     \item \href{#method-TosiStructure-component}{\code{TosiStructure$component()}}
@@ -82,7 +89,9 @@ Component constructors are technical exports, not an extension interface.
   object_type = NULL,
   lang = NULL,
   frequency = NULL,
-  series_key = NULL
+  series_key = NULL,
+  observation_count = NULL,
+  series_count = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -97,11 +106,62 @@ component objects.}
       \item{\code{frequency}}{Optional scalar known frequency code.}
       \item{\code{series_key}}{Optional ordered character vector of eligible
 series-key component IDs.}
+      \item{\code{observation_count}}{Optional actual observation count for this
+object's scope; \code{NULL} or \code{NA_real_} means unknown.}
+      \item{\code{series_count}}{Optional actual series count for this object's
+scope; \code{NULL} or \code{NA_real_} means unknown.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     A new \code{TosiStructure} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiStructure-n_observations"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiStructure-n_observations}{}}}
+\subsection{\code{TosiStructure$n_observations()}}{
+  Count actual observations or potential positions across logical axes,
+including Time and counting canonical replacements once. Value,
+Attributes and scalar frequency are not axes.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiStructure$n_observations(kind = c("actual", "potential"))}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{kind}}{One of \code{"actual"} (default) or \code{"potential"}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    One numeric count, or \code{NA_real_} when unknown.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiStructure-n_series"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiStructure-n_series}{}}}
+\subsection{\code{TosiStructure$n_series()}}{
+  Count actual series or potential positions across the resolved
+\code{series_key}. An unavailable key is unknown; an empty key has one slot.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiStructure$n_series(kind = c("actual", "potential"))}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{kind}}{One of \code{"actual"} (default) or \code{"potential"}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    One numeric count, or \code{NA_real_} when unknown.
   }
 }
 
@@ -227,13 +287,16 @@ including undelivered Attributes.
 \if{latex}{\out{\hypertarget{method-TosiStructure-as_list}{}}}
 \subsection{\code{TosiStructure$as_list()}}{
   Return the schema as a named list, with components as named lists.
+Count groups always contain both \code{actual} and \code{potential}; unknown
+counts are retained as \code{NULL} entries.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$as_list()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the schema fields and components.
+    A named list containing the schema fields, components and
+\code{observation_count} and \code{series_count} groups.
   }
 }
 

@@ -280,19 +280,18 @@ tosi_source_reference <- function(reference, lang = NULL) {
 #' Get a document for search indexing
 #'
 #' @description
-#' Retrieve a table's metadata and structure as a search-index document.
-#' Unlike other result endpoints, this endpoint supports multiple result
-#' languages in one request.
+#' Retrieve a table's metadata and schema as a search-index document in one
+#' natural language. This endpoint is experimental.
 #'
 #' @inheritParams remote_frontends
-#' @param lang Optional character vector of result languages for the index
-#'   document. A non-`NULL` value overrides the session preference.
+#' @param lang One natural-language code, or `NULL` to use the session
+#'   preference and connector default.
 #' @returns A [TosiIndexDocument] object.
 #' @seealso [tosi_metadata()] for table descriptions and schemas, and
 #'   [remote_frontends] for retrieval.
 #' @examples
 #' \dontrun{
-#' tosi_index_document("statfin/vaenn_14x2_px", lang = c("fi", "en"))
+#' tosi_index_document("wb_wdi/SP.POP.TOTL", lang = "en")
 #' }
 #' @export
 tosi_index_document <- function(path, lang = NULL) {

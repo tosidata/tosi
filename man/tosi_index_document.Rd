@@ -16,20 +16,19 @@ canonical object path is \code{"statfin/vaenn_14x2_px"}. For ECB,
 \code{"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"} selects a series from \code{"ecb/FM"}; the
 part after \code{"FM."} is interpreted as \code{source_filter}.}
 
-\item{lang}{Optional character vector of result languages for the index
-document. A non-\code{NULL} value overrides the session preference.}
+\item{lang}{One natural-language code, or \code{NULL} to use the session
+preference and connector default.}
 }
 \value{
 A \link{TosiIndexDocument} object.
 }
 \description{
-Retrieve a table's metadata and structure as a search-index document.
-Unlike other result endpoints, this endpoint supports multiple result
-languages in one request.
+Retrieve a table's metadata and schema as a search-index document in one
+natural language. This endpoint is experimental.
 }
 \examples{
 \dontrun{
-tosi_index_document("statfin/vaenn_14x2_px", lang = c("fi", "en"))
+tosi_index_document("wb_wdi/SP.POP.TOTL", lang = "en")
 }
 }
 \seealso{

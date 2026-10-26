@@ -168,7 +168,15 @@ test_that("TosiStructure constructs an identity-free ordered semantic graph", {
   ))
   expect_named(
     schema$as_list(),
-    c("object_type", "lang", "frequency", "series_key", "components"),
+    c(
+      "object_type",
+      "lang",
+      "frequency",
+      "series_key",
+      "components",
+      "observation_count",
+      "series_count"
+    ),
     ignore.order = TRUE
   )
   expect_identical(schema$object_type, "series")

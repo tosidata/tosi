@@ -2,47 +2,31 @@
 % Please edit documentation in R/TosiIndexDocument.R
 \name{TosiIndexDocument}
 \alias{TosiIndexDocument}
-\title{Search-index document}
+\title{Metadata and schema for indexing a source object}
 \description{
-\code{\link[=tosi_index_document]{tosi_index_document()}} returns a \code{TosiIndexDocument} for indexing an object
-in search. It includes identity, language-specific metadata, a schema
-summary, value domains, coverage, and source-reference cards. Metadata and
-schema sections are named lists, not \link{TosiMetadata} or \link{TosiSchema} objects.
-Fields are read-only; direct and nested replacement fails.
+\code{\link[=tosi_index_document]{tosi_index_document()}} returns a \code{TosiIndexDocument} containing one native
+\link{TosiMetadata} and one \link{TosiSchema} for the same natural language, source
+identity and version. The models retain their ordinary methods, source
+references, attributes, units and domains.
+
+Fields are read-only. Language, identity and version are derived from the
+contained schema. \verb{$as_list()} recursively projects the models to ordinary R
+data.
 }
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{document_type}}{Fixed index-document type.}
+    \item{\code{metadata}}{A genuine \link{TosiMetadata} object.}
 
-    \item{\code{schema_version}}{Index-document contract version.}
+    \item{\code{schema}}{A genuine \link{TosiSchema} object.}
 
-    \item{\code{generated_at}}{Finite non-missing scalar \code{POSIXct} generation time.}
+    \item{\code{lang}}{Natural language, derived from the schema.}
 
-    \item{\code{connector_id}}{Canonical connector identity.}
+    \item{\code{connector_id}}{Canonical connector identity, derived from the schema.}
 
-    \item{\code{object_id}}{Canonical object identity.}
+    \item{\code{object_id}}{Canonical object identity, derived from the schema.}
 
-    \item{\code{object_type}}{Object type: \code{"table"}, \code{"series"}, or \code{"list"}.}
-
-    \item{\code{source_object_id}}{Optional source-native object identifier.}
-
-    \item{\code{data_version}}{Finite non-missing scalar \code{POSIXct} source version.}
-
-    \item{\code{languages}}{Natural languages represented in the document.}
-
-    \item{\code{metadata}}{Language-keyed metadata entries.}
-
-    \item{\code{schema}}{Schema summary as a named list.}
-
-    \item{\code{value_domains}}{Language-keyed source-dimension value domains.}
-
-    \item{\code{coverage}}{Coverage summary.}
-
-    \item{\code{source_references}}{List of compact \link{TosiSourceReference} cards, not
-retrieved \link{TosiSourceDocument} objects.}
-
-    \item{\code{extensions}}{Named connector-specific index extensions.}
+    \item{\code{data_version}}{Source version, derived from the schema.}
   }
   \if{html}{\out{</div>}}
 }
@@ -50,7 +34,6 @@ retrieved \link{TosiSourceDocument} objects.}
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-TosiIndexDocument-initialize}{\code{TosiIndexDocument$new()}}
-    \item \href{#method-TosiIndexDocument-identity}{\code{TosiIndexDocument$identity()}}
     \item \href{#method-TosiIndexDocument-as_list}{\code{TosiIndexDocument$as_list()}}
     \item \href{#method-TosiIndexDocument-format}{\code{TosiIndexDocument$format()}}
     \item \href{#method-TosiIndexDocument-print}{\code{TosiIndexDocument$print()}}
@@ -61,35 +44,19 @@ retrieved \link{TosiSourceDocument} objects.}
 \if{html}{\out{<a id="method-TosiIndexDocument-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiIndexDocument-initialize}{}}}
 \subsection{\code{TosiIndexDocument$new()}}{
-  Construct a normalized search-index document.
+  Compose metadata and schema with matching identity, version and language.
+Agreement does not promise an atomic source snapshot. Construction never
+rewrites a contained version to make independently acquired models agree.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{TosiIndexDocument$new(
-  identity,
-  languages,
-  metadata,
-  schema,
-  value_domains,
-  coverage,
-  source_references = list(),
-  extensions = list()
-)}
+    \preformatted{TosiIndexDocument$new(metadata, schema)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{identity}}{Named list containing \code{connector_id}, \code{object_id},
-\code{object_type}, and \code{data_version}, with optional \code{source_object_id}.}
-      \item{\code{languages}}{Natural-language codes represented in normalized
-sections.}
-      \item{\code{metadata}}{Language-keyed normalized metadata entries.}
-      \item{\code{schema}}{Portable normalized schema summary.}
-      \item{\code{value_domains}}{Language-keyed source-dimension value domains.}
-      \item{\code{coverage}}{Connector-supplied coverage summary.}
-      \item{\code{source_references}}{List of genuine live compact
-\code{TosiSourceReference} cards.}
-      \item{\code{extensions}}{Named list of connector-specific index extensions.}
+      \item{\code{metadata}}{A genuine \code{TosiMetadata} object.}
+      \item{\code{schema}}{A genuine \code{TosiSchema} object.}
     }
     \if{html}{\out{</div>}}
   }
@@ -99,35 +66,17 @@ sections.}
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TosiIndexDocument-identity"></a>}}
-\if{latex}{\out{\hypertarget{method-TosiIndexDocument-identity}{}}}
-\subsection{\code{TosiIndexDocument$identity()}}{
-  Return the document's object identity as a named list.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{TosiIndexDocument$identity()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A named list containing \code{connector_id}, \code{object_id},
-\code{object_type}, and \code{data_version}, plus \code{source_object_id} when
-present.
-  }
-}
-
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TosiIndexDocument-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiIndexDocument-as_list}{}}}
 \subsection{\code{TosiIndexDocument$as_list()}}{
-  Return the index document as a named list. Source-reference cards are
-included as named lists rather than R6 objects.
+  Recursively project the contained models to ordinary R data.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiIndexDocument$as_list()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A named list containing the index sections.
+    A named list with derived flat identity and language, metadata and schema.
   }
 }
 
@@ -135,7 +84,7 @@ included as named lists rather than R6 objects.
 \if{html}{\out{<a id="method-TosiIndexDocument-format"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiIndexDocument-format}{}}}
 \subsection{\code{TosiIndexDocument$format()}}{
-  Format a concise index-document summary.
+  Format a concise summary without retrieving source data.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiIndexDocument$format(...)}
@@ -144,12 +93,12 @@ included as named lists rather than R6 objects.
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{...}}{Reserved for future formatting options; currently ignored.}
+      \item{\code{...}}{Reserved for formatting options; currently ignored.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A character vector containing the index-document summary.
+    A character vector containing the summary.
   }
 }
 
@@ -157,7 +106,7 @@ included as named lists rather than R6 objects.
 \if{html}{\out{<a id="method-TosiIndexDocument-print"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiIndexDocument-print}{}}}
 \subsection{\code{TosiIndexDocument$print()}}{
-  Print the concise index-document summary.
+  Print a concise summary.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiIndexDocument$print(...)}
@@ -171,7 +120,7 @@ included as named lists rather than R6 objects.
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    The \code{TosiIndexDocument} object, invisibly.
+    This index document, invisibly.
   }
 }
 
