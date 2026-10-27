@@ -1,9 +1,3 @@
-# Domain size is display-only; extraction remains an ordinary typed tibble.
-schema_domain_size <- function(component) {
-  domain <- component$domain_table()
-  if (is.null(domain)) "not recorded" else as.character(nrow(domain))
-}
-
 #' Schema component
 #'
 #' `TosiSchemaComponent` describes one physical user-data column whose semantic
@@ -99,7 +93,13 @@ TosiSchemaComponent <- R6Class(
         }
       }
       if (self$role == "attribute") {
-        cat("  Domain: ", schema_domain_size(self), "\n", sep = "")
+        size <- self$domain_size()
+        cat(
+          "  Domain: ",
+          if (is.na(size)) "not recorded" else as.character(size),
+          "\n",
+          sep = ""
+        )
       } else if (self$role != "value") {
         domain <- self$domain_table()
         if (is.null(domain)) {
@@ -109,6 +109,15 @@ TosiSchemaComponent <- R6Class(
         }
       }
       invisible(self)
+    },
+
+    #' @description
+    #' Count the stored primary domain vector without constructing a table.
+    #' @return One numeric length, `NA_integer_` when unavailable, or `0L` for
+    #'   a recorded empty domain.
+    domain_size = function() {
+      domain <- private$.domain[[1L]]
+      if (is.null(domain)) NA_integer_ else length(domain)
     },
 
     domain_table = function() {
@@ -203,6 +212,12 @@ TosiSchemaDimension <- R6Class(
 #' @inherit TosiSchemaComponent
 #' @field replaces_id Optional canonical ID of a source Dimension replaced by
 #'   this canonical Time component.
+#' @field ranges Read-only unnamed list of [time_range()] values in supplied
+#'   order, or `NULL` when unavailable. Construction accepts a singleton or
+#'   list, including `list()`, with unique frequencies. `$as_list()` projects
+#'   plain records with frequency code strings and unchanged endpoint carriers.
+#' @param time_domain Optional ordered Date or POSIXct vector, retaining
+#'   missing values, duplicates and typed-empty values.
 #' @keywords internal
 #' @noRd
 TosiSchemaTime <- R6Class(
@@ -214,13 +229,37 @@ TosiSchemaTime <- R6Class(
       label = NULL,
       data_type = NULL,
       replaces_id = NULL,
-      time_domain = NULL
+      time_domain = NULL,
+      ranges = NULL
     ) {
       validate_scalar_string(replaces_id, allow_null = TRUE)
       if (!is.null(replaces_id)) {
         validate_canonical_id(replaces_id)
       }
-      ## TODO: validate time_domain
+      if (
+        !is.null(time_domain) && !inherits(time_domain, c("Date", "POSIXct"))
+      ) {
+        cli_abort(
+          "{.arg time_domain} must be a Date or POSIXct vector, or NULL."
+        )
+      }
+      if (inherits(ranges, "tosi_time_range")) {
+        ranges <- list(ranges)
+      }
+      if (!is.null(ranges)) {
+        if (
+          !is.list(ranges) ||
+            !all(map_lgl(ranges, inherits, "tosi_time_range"))
+        ) {
+          cli_abort(
+            "{.arg ranges} must be a time range or a list of time ranges."
+          )
+        }
+        if (anyDuplicated(map_chr(ranges, ~ as.character(.x$frequency)))) {
+          cli_abort("Use unique frequencies in {.arg ranges}.")
+        }
+        ranges <- unname(ranges)
+      }
       super$initialize(
         "time",
         label,
@@ -229,6 +268,7 @@ TosiSchemaTime <- R6Class(
       private$.role <- "time"
       private$.replaces_id <- replaces_id
       private$.domain <- list(time = time_domain)
+      private$.ranges <- ranges
     },
 
     as_list = function() {
@@ -236,11 +276,23 @@ TosiSchemaTime <- R6Class(
       if (!is.null(self$replaces_id)) {
         out$replaces_id <- self$replaces_id
       }
+      out["ranges"] <- list(
+        if (!is.null(self$ranges)) {
+          map(self$ranges, function(range) {
+            list(
+              frequency = as.character(range$frequency),
+              first_period = range$first_period,
+              last_period = range$last_period
+            )
+          })
+        }
+      )
       out
     }
   ),
   private = list(
-    .replaces_id = NULL
+    .replaces_id = NULL,
+    .ranges = NULL
   ),
   active = list(
     replaces_id = function(value) {
@@ -248,6 +300,12 @@ TosiSchemaTime <- R6Class(
         cli_abort("{.field replaces_id} is read-only.")
       }
       private$.replaces_id
+    },
+    ranges = function(value) {
+      if (!missing(value)) {
+        cli_abort("{.field ranges} is read-only.")
+      }
+      private$.ranges
     }
   )
 )
@@ -257,6 +315,8 @@ TosiSchemaTime <- R6Class(
 #' @inherit TosiSchemaComponent
 #' @field replaces_id Optional canonical ID of a source Dimension replaced by
 #'   this canonical Frequency component.
+#' @param frequency_domain Optional canonical frequency-code vector, retaining
+#'   order, missing values, duplicates and typed-empty values.
 #' @keywords internal
 #' @noRd
 TosiSchemaFrequency <- R6Class(
@@ -273,6 +333,9 @@ TosiSchemaFrequency <- R6Class(
       validate_scalar_string(replaces_id, allow_null = TRUE)
       if (!is.null(replaces_id)) {
         validate_canonical_id(replaces_id)
+      }
+      if (!is.null(frequency_domain)) {
+        validate_frequency_code(frequency_domain)
       }
       super$initialize(
         "freq",
@@ -402,48 +465,35 @@ TosiSchemaAttribute <- R6Class(
 
 #' Source-independent table structure
 #'
-#' `TosiStructure` describes a table or series through its ordered components,
-#' identifiers, labels, roles, and available value domains, without requiring
-#' source identity or a source version. It retains language, frequency, and
-#' series-key information. [TosiSchema] inherits this structure and adds a
-#' canonical source identity and version. Both classes support the same
-#' structural methods. Fields are read-only; direct and nested replacement
-#' fails. Use `$column_names()` to see the physical names for each column mode.
+#' `TosiStructure` describes a table or series through ordered components,
+#' identifiers, labels, roles, and available value domains. It retains language,
+#' frequency, and series-key information without requiring source identity or
+#' version. [TosiSchema] adds that source binding and inherits the structural
+#' methods. Fields are read-only; direct and nested replacement fails.
 #'
-#' Use `structure$as_schema(connector_id, object_id, data_version)` to create a
-#' new source-bound schema. The receiver is unchanged and existing component
-#' instances are shared, not cloned. The inherited method on a bound schema
-#' also creates a new result with the supplied binding, without replacing the
-#' receiver's source binding. Supplied actual counts are retained.
+#' @section Component inspection:
+#' Use `$component(id)` for exact-ID lookup and `$domain_table(id)` for the
+#' complete domain. Each component also provides `$domain_table()` with the
+#' same return contract. `component$domain_size()` counts the stored primary
+#' domain vector without constructing a table: `NA_integer_` when unavailable,
+#' `0L` for a recorded empty domain.
 #'
-#' `$n_observations()` and `$n_series()` default to source-established actual
-#' counts for this object's scope. `kind = "potential"` counts logical grid
-#' positions, not occupancy. Unknown is `NA_real_`; known empty grids are zero.
-#' Neither kind falls back to the other, and neither performs retrieval.
+#' `print(component)` or `component$print(n = 3)` bounds displayed domain rows
+#' for Dimensions, Time, Frequency and unknown roles. Attributes show metadata
+#' and domain size only; Value shows its unit when recorded. Printing returns
+#' the same object invisibly without mutation. `$domain_table()` returns the
+#' complete domain regardless of display limits; truncation and omission
+#' markers are not literal source-filter values.
 #'
-#' Use `schema$component(id)` to obtain the existing component by its exact ID,
-#' and `schema$domain_table(id)` to inspect its complete domain. Every component
-#' also provides `component$domain_table()` with the same return contract.
-#' These methods preserve source order and vector types. Code domains contain
-#' `code` and, only when supplied, `label`; Time and Frequency domains contain
-#' `time` and `frequency`, respectively, retaining native Date and frequency
-#' values. An unrecorded domain returns `NULL` (including Value); a recorded
-#' empty domain returns a typed zero-row tibble. Domain inspection does not
-#' translate values into source filters; filter conventions are source-specific.
-#' Use `print(schema)` or `schema$print()` for a compact overview without domain
-#' values. Dimensions, Time, Frequency and unknown roles are shown together;
-#' Attributes and Value are summarized separately. Relative order within each
-#' group is preserved; the stored component order is unchanged. Domain sizes
-#' distinguish unrecorded from recorded empty domains. Each component supports
-#' `print(component)` and `component$print(n = 3)` for focused inspection. The
-#' per-call `n` bounds domain rows for Dimensions, Time, Frequency and unknown
-#' roles. Attributes show metadata and domain size only; Value shows its unit
-#' when recorded. Printing returns the same object invisibly without mutation.
-#' `$domain_table()` extracts the complete domain regardless of display limits.
-#' Display truncation and omission markers are not literal source-filter values.
-#' Use `str(schema)` or `str(component)` for structural R6 inspection, including
-#' fields and method signatures, rather than the interactive overview.
-#' Component constructors are technical exports, not an extension interface.
+#' Use `str(schema)` or `str(component)` to inspect R6 fields and method
+#' signatures rather than the interactive overview. Component constructors
+#' are technical exports, not an extension interface.
+#'
+#' Time construction accepts `ranges = NULL`, one [time_range()] value or a
+#' list of values with unique frequencies. `$ranges` is a read-only unnamed
+#' list in supplied order; `$as_list()$ranges` contains plain records with
+#' frequency strings and Date/POSIXct endpoints. Ranges do not populate
+#' `$frequencies()` or establish an enumerated Time domain.
 #'
 #' @field object_type Optional connector-supplied object type.
 #' @field lang Scalar natural-language code or `"codes"`.
@@ -463,8 +513,6 @@ TosiStructure <- R6Class(
     #'   component objects.
     #' @param object_type Optional connector-supplied object type: `"table"`,
     #'   `"series"`, or `NULL`.
-    #' @param lang Scalar natural-language code or `"codes"`.
-    #' @param frequency Optional scalar known frequency code.
     #' @param series_key Optional ordered character vector of eligible
     #'   series-key component IDs.
     #' @param observation_count Optional actual observation count for this
@@ -614,11 +662,27 @@ TosiStructure <- R6Class(
     },
 
     #' @description
-    #' Count actual observations or potential positions across logical axes,
-    #' including Time and counting canonical replacements once. Value,
-    #' Attributes and scalar frequency are not axes.
+    #' Return the fixed frequency when present, otherwise the Frequency
+    #' component's domain, without inference or retrieval.
+    #' @return The existing frequency vector, preserving class, order, missing
+    #'   values and typed-empty values, or `NULL` when absent or unavailable.
+    frequencies = function() {
+      self$frequency %||%
+        detect(
+          self$components,
+          \(component) inherits(component, "TosiSchemaFrequency")
+        )$domain$frequency
+    },
+
+    #' @description
+    #' Report source-established actual observations for this object's scope
+    #' or potential grid positions, not occupancy. Potential counts span logical
+    #' axes including Time, counting canonical replacements once; Value,
+    #' Attributes and scalar frequency are not axes. Neither kind falls back
+    #' to the other or performs retrieval.
     #' @param kind One of `"actual"` (default) or `"potential"`.
-    #' @return One numeric count, or `NA_real_` when unknown.
+    #' @return One numeric count, or `NA_real_` when unknown; a known empty
+    #'   grid is zero.
     n_observations = function(kind = c("actual", "potential")) {
       kind <- match.arg(kind)
       if (kind == "actual") {
@@ -628,10 +692,13 @@ TosiStructure <- R6Class(
     },
 
     #' @description
-    #' Count actual series or potential positions across the resolved
-    #' `series_key`. An unavailable key is unknown; an empty key has one slot.
+    #' Report source-established actual series for this object's scope or
+    #' potential grid positions across the resolved `series_key`, not occupancy.
+    #' An unavailable key is unknown; an empty key has one slot. Neither kind
+    #' falls back to the other or performs retrieval.
     #' @param kind One of `"actual"` (default) or `"potential"`.
-    #' @return One numeric count, or `NA_real_` when unknown.
+    #' @return One numeric count, or `NA_real_` when unknown; a known empty
+    #'   grid is zero.
     n_series = function(kind = c("actual", "potential")) {
       kind <- match.arg(kind)
       if (kind == "actual") {
@@ -644,7 +711,8 @@ TosiStructure <- R6Class(
     },
 
     #' @description
-    #' Create a source-bound schema sharing the existing component instances.
+    #' Create a new source-bound schema with the supplied binding, retaining
+    #' actual counts and sharing existing component instances without cloning.
     #' The receiver and its source binding, if any, remain unchanged.
     #'
     #' @param connector_id Scalar canonical connector ID.
@@ -667,8 +735,11 @@ TosiStructure <- R6Class(
     },
 
     #' @description
-    #' Print a compact role-grouped overview of every component, without
-    #' domain values or changing stored component order.
+    #' Print a compact overview without domain values. Dimensions, Time,
+    #' Frequency and unknown roles appear together; Attributes and Value are
+    #' summarized separately. Relative order within each group is preserved,
+    #' without changing stored component order. Domain sizes distinguish
+    #' unrecorded from recorded empty domains.
     #'
     #' @return This schema object, invisibly and without mutation.
     print = function() {
@@ -694,11 +765,14 @@ TosiStructure <- R6Class(
     #' @description
     #' Return a component's complete domain by delegating to its
     #' `$domain_table()` method. An unknown ID raises a lookup error.
+    #' Domain values are not translated into source filters; filter conventions
+    #' are source-specific.
     #'
     #' @param id Exact component ID.
     #' @return A tibble in source order with `code` and optional `label`,
-    #'   `time`, or `frequency` columns, preserving vector types. Returns
-    #'   `NULL` for an unrecorded domain, or a typed zero-row tibble for a
+    #'   `time`, or `frequency` columns, preserving vector types including
+    #'   native Date/POSIXct and frequency values. Returns `NULL` for an
+    #'   unrecorded domain (including Value), or a typed zero-row tibble for a
     #'   recorded empty domain.
     domain_table = function(id) {
       self$component(id)$domain_table()
@@ -809,10 +883,7 @@ TosiStructure <- R6Class(
       })
     },
     grid_size = function(axes) {
-      sizes <- map_dbl(axes, \(axis) {
-        domain <- axis$domain_table()
-        if (is.null(domain)) NA_real_ else nrow(domain)
-      })
+      sizes <- map_dbl(axes, \(axis) axis$domain_size())
       # A known empty axis makes the grid empty even if another is unavailable.
       if (any(sizes == 0, na.rm = TRUE)) 0 else prod(sizes)
     },
@@ -830,7 +901,10 @@ TosiStructure <- R6Class(
         table <- tibble::tibble(
           ID = map_chr(overview, "id"),
           role = map_chr(overview, "role"),
-          domain = map_chr(overview, schema_domain_size),
+          domain = map_chr(overview, \(x) {
+            size <- x$domain_size()
+            if (is.na(size)) "not recorded" else as.character(size)
+          }),
           label = map_chr(overview, "label")
         )
         base::print(table, n = Inf, width = getOption("width"))
@@ -850,7 +924,10 @@ TosiStructure <- R6Class(
         cat("Attributes:\n")
         table <- tibble::tibble(
           ID = map_chr(attributes, "id"),
-          domain = map_chr(attributes, schema_domain_size),
+          domain = map_chr(attributes, \(x) {
+            size <- x$domain_size()
+            if (is.na(size)) "not recorded" else as.character(size)
+          }),
           label = map_chr(attributes, "label"),
           type = map_chr(attributes, \(x) x$data_type %||% "not recorded"),
           level = map_chr(attributes, \(x) x$level %||% "not recorded")
@@ -897,27 +974,15 @@ TosiStructure <- R6Class(
 #' Source-bound table structure
 #'
 #' `TosiSchema` inherits [TosiStructure] and directly stores canonical source
-#' identity and version. Construct it directly or use
-#' `structure$as_schema(connector_id, object_id, data_version)` to bind an
-#' existing structure without changing it or cloning its components.
-#' Use `$component()`, `$domain_table()`, and
-#' `$column_names()` directly, without unwrapping another schema object.
-#' Count methods and projection follow [TosiStructure].
-#' Canonical identity and source version are available through read-only
-#' `$connector_id`, `$object_id`, and `$data_version` bindings.
+#' identity and version. Inherited structure and source-binding fields are
+#' read-only; direct and nested replacement fails. Construct a schema directly
+#' or bind an existing structure with `$as_schema()`.
 #'
-#' A `tosi_table` embeds this source-bound schema. Obtaining its `schema`
-#' attribute retains the source binding. The schema is the sole authority for
-#' that binding; the table stores no independent identity or version copy.
-#' Metadata describes the delivered result, with no guarantee after wrangling.
-#' `$as_list()` returns an ordinary list with top-level source-binding fields
-#' followed by structural fields; components are projected as named lists.
-#' This projection is not independently authoritative state.
-#'
-#' Inherited fields and source-binding fields are read-only; direct and nested
-#' replacement fails. The version's shape is checked at construction; the
-#' producer establishes which source input it describes. These shared model
-#' constructors are technical exports, not an external subclassing interface.
+#' A `tosi_table` embeds this schema as the sole authority for its source
+#' binding, with no independent identity or version copy. Obtaining the table's
+#' `schema` attribute retains that binding. Metadata describes the delivered
+#' result, with no guarantee after wrangling. These shared model constructors
+#' are technical exports, not an external subclassing interface.
 #'
 #' @field connector_id Read-only scalar canonical connector ID vector.
 #' @field object_id Read-only scalar canonical object ID vector.
@@ -931,6 +996,8 @@ TosiSchema <- R6Class(
   public = list(
     #' @description
     #' Construct the structural graph and its canonical source binding.
+    #' The version's shape is checked here; the producer establishes which
+    #' source input it describes.
     #'
     #' @param connector_id Scalar canonical connector ID.
     #' @param object_id Scalar canonical object ID.
@@ -939,12 +1006,8 @@ TosiSchema <- R6Class(
     #'   component objects.
     #' @param object_type Optional connector-supplied object type: `"table"`,
     #'   `"series"`, or `NULL`.
-    #' @param lang Scalar natural-language code or `"codes"`.
-    #' @param frequency Optional scalar known frequency code.
     #' @param series_key Optional ordered character vector of eligible
     #'   series-key component IDs.
-    #' @param observation_count,series_count Optional actual counts; see
-    #'   [TosiStructure].
     #' @return A new `TosiSchema` object.
     initialize = function(
       connector_id,
@@ -981,7 +1044,8 @@ TosiSchema <- R6Class(
     },
 
     #' @description
-    #' Print source identity and version, followed by the structural overview.
+    #' Print source identity and version, followed by the role-grouped overview
+    #' described in [TosiStructure]'s `$print()` method.
     #' @return This schema object, invisibly and without mutation.
     print = function() {
       cat(
@@ -1005,9 +1069,11 @@ TosiSchema <- R6Class(
     },
 
     #' @description
-    #' Return source-binding fields followed by structural fields.
+    #' Return an ordinary list with top-level source-binding fields followed
+    #' by the [TosiStructure] projection, including components as named lists.
+    #' This projection is not independently authoritative state.
     #' @return A named list with `connector_id`, `object_id` and `data_version`
-    #'   followed by the [TosiStructure] projection.
+    #'   followed by structural fields and count groups.
     as_list = function() {
       c(
         list(

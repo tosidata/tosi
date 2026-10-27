@@ -4,49 +4,38 @@
 \alias{TosiStructure}
 \title{Source-independent table structure}
 \description{
-\code{TosiStructure} describes a table or series through its ordered components,
-identifiers, labels, roles, and available value domains, without requiring
-source identity or a source version. It retains language, frequency, and
-series-key information. \link{TosiSchema} inherits this structure and adds a
-canonical source identity and version. Both classes support the same
-structural methods. Fields are read-only; direct and nested replacement
-fails. Use \verb{$column_names()} to see the physical names for each column mode.
-
-Use \code{structure$as_schema(connector_id, object_id, data_version)} to create a
-new source-bound schema. The receiver is unchanged and existing component
-instances are shared, not cloned. The inherited method on a bound schema
-also creates a new result with the supplied binding, without replacing the
-receiver's source binding. Supplied actual counts are retained.
-
-\verb{$n_observations()} and \verb{$n_series()} default to source-established actual
-counts for this object's scope. \code{kind = "potential"} counts logical grid
-positions, not occupancy. Unknown is \code{NA_real_}; known empty grids are zero.
-Neither kind falls back to the other, and neither performs retrieval.
-
-Use \code{schema$component(id)} to obtain the existing component by its exact ID,
-and \code{schema$domain_table(id)} to inspect its complete domain. Every component
-also provides \code{component$domain_table()} with the same return contract.
-These methods preserve source order and vector types. Code domains contain
-\code{code} and, only when supplied, \code{label}; Time and Frequency domains contain
-\code{time} and \code{frequency}, respectively, retaining native Date and frequency
-values. An unrecorded domain returns \code{NULL} (including Value); a recorded
-empty domain returns a typed zero-row tibble. Domain inspection does not
-translate values into source filters; filter conventions are source-specific.
-Use \code{print(schema)} or \code{schema$print()} for a compact overview without domain
-values. Dimensions, Time, Frequency and unknown roles are shown together;
-Attributes and Value are summarized separately. Relative order within each
-group is preserved; the stored component order is unchanged. Domain sizes
-distinguish unrecorded from recorded empty domains. Each component supports
-\code{print(component)} and \code{component$print(n = 3)} for focused inspection. The
-per-call \code{n} bounds domain rows for Dimensions, Time, Frequency and unknown
-roles. Attributes show metadata and domain size only; Value shows its unit
-when recorded. Printing returns the same object invisibly without mutation.
-\verb{$domain_table()} extracts the complete domain regardless of display limits.
-Display truncation and omission markers are not literal source-filter values.
-Use \code{str(schema)} or \code{str(component)} for structural R6 inspection, including
-fields and method signatures, rather than the interactive overview.
-Component constructors are technical exports, not an extension interface.
+\code{TosiStructure} describes a table or series through ordered components,
+identifiers, labels, roles, and available value domains. It retains language,
+frequency, and series-key information without requiring source identity or
+version. \link{TosiSchema} adds that source binding and inherits the structural
+methods. Fields are read-only; direct and nested replacement fails.
 }
+\section{Component inspection}{
+
+Use \verb{$component(id)} for exact-ID lookup and \verb{$domain_table(id)} for the
+complete domain. Each component also provides \verb{$domain_table()} with the
+same return contract. \code{component$domain_size()} counts the stored primary
+domain vector without constructing a table: \code{NA_integer_} when unavailable,
+\code{0L} for a recorded empty domain.
+
+\code{print(component)} or \code{component$print(n = 3)} bounds displayed domain rows
+for Dimensions, Time, Frequency and unknown roles. Attributes show metadata
+and domain size only; Value shows its unit when recorded. Printing returns
+the same object invisibly without mutation. \verb{$domain_table()} returns the
+complete domain regardless of display limits; truncation and omission
+markers are not literal source-filter values.
+
+Use \code{str(schema)} or \code{str(component)} to inspect R6 fields and method
+signatures rather than the interactive overview. Component constructors
+are technical exports, not an extension interface.
+
+Time construction accepts \code{ranges = NULL}, one \code{\link[=time_range]{time_range()}} value or a
+list of values with unique frequencies. \verb{$ranges} is a read-only unnamed
+list in supplied order; \verb{$as_list()$ranges} contains plain records with
+frequency strings and Date/POSIXct endpoints. Ranges do not populate
+\verb{$frequencies()} or establish an enumerated Time domain.
+}
+
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
@@ -66,6 +55,7 @@ Component constructors are technical exports, not an extension interface.
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-TosiStructure-initialize}{\code{TosiStructure$new()}}
+    \item \href{#method-TosiStructure-frequencies}{\code{TosiStructure$frequencies()}}
     \item \href{#method-TosiStructure-n_observations}{\code{TosiStructure$n_observations()}}
     \item \href{#method-TosiStructure-n_series}{\code{TosiStructure$n_series()}}
     \item \href{#method-TosiStructure-as_schema}{\code{TosiStructure$as_schema()}}
@@ -119,12 +109,31 @@ scope; \code{NULL} or \code{NA_real_} means unknown.}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TosiStructure-frequencies"></a>}}
+\if{latex}{\out{\hypertarget{method-TosiStructure-frequencies}{}}}
+\subsection{\code{TosiStructure$frequencies()}}{
+  Return the fixed frequency when present, otherwise the Frequency
+component's domain, without inference or retrieval.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TosiStructure$frequencies()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The existing frequency vector, preserving class, order, missing
+values and typed-empty values, or \code{NULL} when absent or unavailable.
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TosiStructure-n_observations"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiStructure-n_observations}{}}}
 \subsection{\code{TosiStructure$n_observations()}}{
-  Count actual observations or potential positions across logical axes,
-including Time and counting canonical replacements once. Value,
-Attributes and scalar frequency are not axes.
+  Report source-established actual observations for this object's scope
+or potential grid positions, not occupancy. Potential counts span logical
+axes including Time, counting canonical replacements once; Value,
+Attributes and scalar frequency are not axes. Neither kind falls back
+to the other or performs retrieval.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$n_observations(kind = c("actual", "potential"))}
@@ -138,7 +147,8 @@ Attributes and scalar frequency are not axes.
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    One numeric count, or \code{NA_real_} when unknown.
+    One numeric count, or \code{NA_real_} when unknown; a known empty
+grid is zero.
   }
 }
 
@@ -146,8 +156,10 @@ Attributes and scalar frequency are not axes.
 \if{html}{\out{<a id="method-TosiStructure-n_series"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiStructure-n_series}{}}}
 \subsection{\code{TosiStructure$n_series()}}{
-  Count actual series or potential positions across the resolved
-\code{series_key}. An unavailable key is unknown; an empty key has one slot.
+  Report source-established actual series for this object's scope or
+potential grid positions across the resolved \code{series_key}, not occupancy.
+An unavailable key is unknown; an empty key has one slot. Neither kind
+falls back to the other or performs retrieval.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$n_series(kind = c("actual", "potential"))}
@@ -161,7 +173,8 @@ Attributes and scalar frequency are not axes.
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    One numeric count, or \code{NA_real_} when unknown.
+    One numeric count, or \code{NA_real_} when unknown; a known empty
+grid is zero.
   }
 }
 
@@ -169,7 +182,8 @@ Attributes and scalar frequency are not axes.
 \if{html}{\out{<a id="method-TosiStructure-as_schema"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiStructure-as_schema}{}}}
 \subsection{\code{TosiStructure$as_schema()}}{
-  Create a source-bound schema sharing the existing component instances.
+  Create a new source-bound schema with the supplied binding, retaining
+actual counts and sharing existing component instances without cloning.
 The receiver and its source binding, if any, remain unchanged.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
@@ -194,8 +208,11 @@ The receiver and its source binding, if any, remain unchanged.
 \if{html}{\out{<a id="method-TosiStructure-print"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiStructure-print}{}}}
 \subsection{\code{TosiStructure$print()}}{
-  Print a compact role-grouped overview of every component, without
-domain values or changing stored component order.
+  Print a compact overview without domain values. Dimensions, Time,
+Frequency and unknown roles appear together; Attributes and Value are
+summarized separately. Relative order within each group is preserved,
+without changing stored component order. Domain sizes distinguish
+unrecorded from recorded empty domains.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$print()}
@@ -235,6 +252,8 @@ position. An unknown ID raises a lookup error.
 \subsection{\code{TosiStructure$domain_table()}}{
   Return a component's complete domain by delegating to its
 \verb{$domain_table()} method. An unknown ID raises a lookup error.
+Domain values are not translated into source filters; filter conventions
+are source-specific.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiStructure$domain_table(id)}
@@ -249,8 +268,9 @@ position. An unknown ID raises a lookup error.
   }
   \subsection{Returns}{
     A tibble in source order with \code{code} and optional \code{label},
-\code{time}, or \code{frequency} columns, preserving vector types. Returns
-\code{NULL} for an unrecorded domain, or a typed zero-row tibble for a
+\code{time}, or \code{frequency} columns, preserving vector types including
+native Date/POSIXct and frequency values. Returns \code{NULL} for an
+unrecorded domain (including Value), or a typed zero-row tibble for a
 recorded empty domain.
   }
 }

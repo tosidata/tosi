@@ -71,6 +71,9 @@ new_frequency_code <- function(x = integer()) {
 #' unrecognized codes are rejected. `NULL` stays `NULL`; empty character and
 #' factor inputs produce an empty vector with all canonical levels.
 #'
+#' `unique()` retains the frequency-code class and canonical levels, using
+#' ordinary factor duplicate handling and arguments.
+#'
 #' `new_frequency_code()` constructs a vector from integer positions in the
 #' canonical level order (1 for `"A"`, 5 for `"W2"`), with `NA_integer_` for
 #' missing values. It expects an integer vector; the default is empty.
@@ -174,6 +177,11 @@ vec_ptype_full.tosi_frequency_code <- function(x, ...) "tosi_frequency_code"
 #' @export
 format.tosi_frequency_code <- function(x, ...) {
   as.character(x)
+}
+
+#' @export
+unique.tosi_frequency_code <- function(x, incomparables = FALSE, ...) {
+  vec_restore(NextMethod(), x)
 }
 
 #' @export

@@ -5,27 +5,15 @@
 \title{Source-bound table structure}
 \description{
 \code{TosiSchema} inherits \link{TosiStructure} and directly stores canonical source
-identity and version. Construct it directly or use
-\code{structure$as_schema(connector_id, object_id, data_version)} to bind an
-existing structure without changing it or cloning its components.
-Use \verb{$component()}, \verb{$domain_table()}, and
-\verb{$column_names()} directly, without unwrapping another schema object.
-Count methods and projection follow \link{TosiStructure}.
-Canonical identity and source version are available through read-only
-\verb{$connector_id}, \verb{$object_id}, and \verb{$data_version} bindings.
+identity and version. Inherited structure and source-binding fields are
+read-only; direct and nested replacement fails. Construct a schema directly
+or bind an existing structure with \verb{$as_schema()}.
 
-A \code{tosi_table} embeds this source-bound schema. Obtaining its \code{schema}
-attribute retains the source binding. The schema is the sole authority for
-that binding; the table stores no independent identity or version copy.
-Metadata describes the delivered result, with no guarantee after wrangling.
-\verb{$as_list()} returns an ordinary list with top-level source-binding fields
-followed by structural fields; components are projected as named lists.
-This projection is not independently authoritative state.
-
-Inherited fields and source-binding fields are read-only; direct and nested
-replacement fails. The version's shape is checked at construction; the
-producer establishes which source input it describes. These shared model
-constructors are technical exports, not an external subclassing interface.
+A \code{tosi_table} embeds this schema as the sole authority for its source
+binding, with no independent identity or version copy. Obtaining the table's
+\code{schema} attribute retains that binding. Metadata describes the delivered
+result, with no guarantee after wrangling. These shared model constructors
+are technical exports, not an external subclassing interface.
 }
 \section{Super class}{
 \code{\link[tosi:TosiStructure]{TosiStructure}} -> \code{TosiSchema}
@@ -57,6 +45,7 @@ version.}
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="column_names"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-column_names'><code>TosiStructure$column_names()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="component"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-component'><code>TosiStructure$component()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="domain_table"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-domain_table'><code>TosiStructure$domain_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="frequencies"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-frequencies'><code>TosiStructure$frequencies()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="n_observations"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-n_observations'><code>TosiStructure$n_observations()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="tosi" data-topic="TosiStructure" data-id="n_series"><a href='../../tosi/html/TosiStructure.html#method-TosiStructure-n_series'><code>TosiStructure$n_series()</code></a></span></li>
 </ul>
@@ -66,6 +55,8 @@ version.}
 \if{latex}{\out{\hypertarget{method-TosiSchema-initialize}{}}}
 \subsection{\code{TosiSchema$new()}}{
   Construct the structural graph and its canonical source binding.
+The version's shape is checked here; the producer establishes which
+source input it describes.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$new(
@@ -96,8 +87,10 @@ component objects.}
       \item{\code{frequency}}{Optional scalar known frequency code.}
       \item{\code{series_key}}{Optional ordered character vector of eligible
 series-key component IDs.}
-      \item{\code{observation_count, series_count}}{Optional actual counts; see
-\link{TosiStructure}.}
+      \item{\code{observation_count}}{Optional actual observation count for this
+object's scope; \code{NULL} or \code{NA_real_} means unknown.}
+      \item{\code{series_count}}{Optional actual series count for this object's
+scope; \code{NULL} or \code{NA_real_} means unknown.}
     }
     \if{html}{\out{</div>}}
   }
@@ -110,7 +103,8 @@ series-key component IDs.}
 \if{html}{\out{<a id="method-TosiSchema-print"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-print}{}}}
 \subsection{\code{TosiSchema$print()}}{
-  Print source identity and version, followed by the structural overview.
+  Print source identity and version, followed by the role-grouped overview
+described in \link{TosiStructure}'s \verb{$print()} method.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$print()}
@@ -125,7 +119,9 @@ series-key component IDs.}
 \if{html}{\out{<a id="method-TosiSchema-as_list"></a>}}
 \if{latex}{\out{\hypertarget{method-TosiSchema-as_list}{}}}
 \subsection{\code{TosiSchema$as_list()}}{
-  Return source-binding fields followed by structural fields.
+  Return an ordinary list with top-level source-binding fields followed
+by the \link{TosiStructure} projection, including components as named lists.
+This projection is not independently authoritative state.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TosiSchema$as_list()}
@@ -133,7 +129,7 @@ series-key component IDs.}
   }
   \subsection{Returns}{
     A named list with \code{connector_id}, \code{object_id} and \code{data_version}
-followed by the \link{TosiStructure} projection.
+followed by structural fields and count groups.
   }
 }
 

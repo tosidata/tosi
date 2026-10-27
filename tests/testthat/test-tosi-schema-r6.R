@@ -33,6 +33,10 @@ test_that("exact-ID lookup and domain inspection preserve schema state", {
     expect_identical(schema$component(component$id), component)
     expect_identical(component$domain_table(), domain)
     expect_identical(schema$domain_table(component$id), domain)
+    expect_identical(
+      component$domain_size(),
+      if (is.null(domain)) NA_integer_ else nrow(domain)
+    )
   })
   expect_error(schema$component("Region"), "Unknown.*Region")
   expect_error(schema$component("reg"), "Unknown.*reg")
@@ -69,7 +73,10 @@ test_that("domain inspection distinguishes absent and typed empty domains", {
     TosiSchemaValue$new(),
     TosiSchemaAttribute$new("status")
   )
-  walk(absent, function(component) expect_null(component$domain_table()))
+  walk(absent, function(component) {
+    expect_null(component$domain_table())
+    expect_identical(component$domain_size(), NA_integer_)
+  })
 
   empty <- list(
     TosiSchemaComponent$new("unclassified", domain_codes = character()),
@@ -91,7 +98,147 @@ test_that("domain inspection distinguishes absent and typed empty domains", {
   )
   walk2(empty, expected, function(component, domain) {
     expect_identical(component$domain_table(), domain)
+    expect_identical(component$domain_size(), 0L)
   })
+})
+
+test_that("Time and Frequency constructors retain their vector contracts", {
+  for (domain in list(
+    as.Date(c("2021-01-01", NA, "2020-01-01", "2021-01-01")),
+    as.POSIXct(c("2021-01-01", NA, "2020-01-01"), tz = "UTC"),
+    as.POSIXct(character(), tz = "UTC")
+  )) {
+    time <- TosiSchemaTime$new(time_domain = domain)
+    expect_identical(time$domain$time, domain)
+    expect_identical(time$domain_size(), length(domain))
+  }
+  frequencies <- frequency_code(c("M", NA, "A", "M"))
+  frequency <- TosiSchemaFrequency$new(frequency_domain = frequencies)
+  expect_identical(frequency$domain$frequency, frequencies)
+  expect_identical(frequency$domain_size(), 4L)
+  expect_error(TosiSchemaTime$new(time_domain = "2020-01-01"), "time_domain")
+  expect_error(
+    TosiSchemaFrequency$new(frequency_domain = "A"),
+    "tosi_frequency_code"
+  )
+})
+
+test_that("numeric domain sizes and grid counts do not construct domain tables", {
+  testthat::local_mocked_bindings(
+    as_tibble = function(...) stop("Domain table conversion was called"),
+    .package = "tibble"
+  )
+  dimension <- TosiSchemaDimension$new("area", domain_codes = c("FI", "SE"))
+  time <- TosiSchemaTime$new(time_domain = as.Date("2020-01-01") + 0:2)
+  expect_identical(dimension$domain_size(), 2L)
+  expect_identical(time$domain_size(), 3L)
+  structure <- TosiStructure$new(list(dimension, time), lang = "en")
+  expect_identical(structure$n_observations("potential"), 6)
+})
+
+test_that("Time normalizes range collections and projects plain records", {
+  first <- as.Date("2020-01-01")
+  last <- as.Date("2022-01-01")
+  monthly <- time_range(first, last, "M")
+  annual <- time_range(first, last, "A")
+  ranges <- list(monthly, annual)
+  time <- TosiSchemaTime$new(
+    ranges = list(ignored = monthly, also_ignored = annual)
+  )
+
+  expect_identical(time$ranges, ranges)
+  expect_error(time$ranges <- list(), "read-only")
+  expect_error(
+    time$ranges[[1]]$first_period <- as.Date("1999-01-01"),
+    "read-only"
+  )
+  expect_identical(time$ranges, ranges)
+  projected <- list(
+    list(frequency = "M", first_period = first, last_period = last),
+    list(frequency = "A", first_period = first, last_period = last)
+  )
+  expect_identical(time$as_list()$ranges, projected)
+
+  single <- TosiSchemaTime$new(ranges = annual)
+  expect_identical(single$ranges, list(annual))
+  expect_identical(single$as_list()$ranges, projected[2])
+  expect_identical(
+    TosiSchemaTime$new(ranges = list(annual))$ranges,
+    list(annual)
+  )
+
+  unavailable <- TosiSchemaTime$new()
+  expect_null(unavailable$ranges)
+  expect_identical(unavailable$as_list()["ranges"], list(ranges = NULL))
+  empty <- TosiSchemaTime$new(ranges = list())
+  expect_identical(empty$ranges, list())
+  expect_identical(empty$as_list()$ranges, list())
+  datetime <- as.POSIXct("2020-01-01", tz = "Europe/Helsinki")
+  datetime_range <- time_range(datetime, datetime, "H")
+  hourly <- TosiSchemaTime$new(ranges = datetime_range)
+  expect_identical(hourly$ranges, list(datetime_range))
+  expect_identical(
+    hourly$as_list()$ranges,
+    list(list(frequency = "H", first_period = datetime, last_period = datetime))
+  )
+})
+
+test_that("Time owns collection membership and frequency uniqueness", {
+  day <- as.Date("2020-01-01")
+  annual <- time_range(day, day + 1, "A")
+  expect_error(TosiSchemaTime$new(ranges = "A"), "ranges")
+  expect_error(
+    TosiSchemaTime$new(
+      ranges = list(A = list(first_period = day, last_period = day))
+    ),
+    "ranges"
+  )
+  expect_error(TosiSchemaTime$new(ranges = list(annual, day)), "ranges")
+  expect_error(
+    TosiSchemaTime$new(ranges = list(annual, annual)),
+    "unique frequencies"
+  )
+})
+
+test_that("frequencies exposes fixed and component-backed vectors unchanged", {
+  fixed <- frequency_code("A")
+  structural <- TosiStructure$new(
+    components = list(TosiSchemaValue$new()),
+    lang = "en",
+    frequency = fixed
+  )
+  expect_identical(structural$frequencies(), fixed)
+  bound <- structural$as_schema(
+    "statfin",
+    "trade",
+    as.POSIXct("2025-01-02", tz = "UTC")
+  )
+  expect_identical(bound$frequencies(), fixed)
+
+  for (domain in list(
+    frequency_code(c("M", NA, "A")),
+    frequency_code("Q"),
+    frequency_code(character())
+  )) {
+    structural <- TosiStructure$new(
+      components = list(TosiSchemaFrequency$new(frequency_domain = domain)),
+      lang = "en"
+    )
+    expect_identical(structural$frequencies(), domain)
+  }
+})
+
+test_that("frequencies remains NULL without a recorded frequency", {
+  time <- TosiSchemaTime$new(
+    ranges = time_range(as.Date("2020-01-01"), as.Date("2022-01-01"), "A")
+  )
+  absent <- TosiStructure$new(components = list(time), lang = "en")
+  unavailable <- TosiStructure$new(
+    components = list(time, TosiSchemaFrequency$new()),
+    lang = "en"
+  )
+  expect_null(absent$frequencies())
+  expect_null(unavailable$frequencies())
 })
 
 test_that("TosiStructure constructs an identity-free ordered semantic graph", {

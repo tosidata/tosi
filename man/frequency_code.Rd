@@ -46,6 +46,9 @@ Missing values are preserved, including an all-missing logical vector;
 unrecognized codes are rejected. \code{NULL} stays \code{NULL}; empty character and
 factor inputs produce an empty vector with all canonical levels.
 
+\code{unique()} retains the frequency-code class and canonical levels, using
+ordinary factor duplicate handling and arguments.
+
 \code{new_frequency_code()} constructs a vector from integer positions in the
 canonical level order (1 for \code{"A"}, 5 for \code{"W2"}), with \code{NA_integer_} for
 missing values. It expects an integer vector; the default is empty.

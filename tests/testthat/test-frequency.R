@@ -124,6 +124,17 @@ test_that("same-version frequency operations preserve code meaning", {
   expect_error(vctrs::vec_c(x, "M"), class = "vctrs_error_ptype2")
 })
 
+test_that("unique() preserves frequency class and base factor semantics", {
+  x <- frequency_code(c("M", NA, "A", "M", NA, "Q", "A"))
+  expect_identical(unique(x), frequency_code(c("M", NA, "A", "Q")))
+  empty <- frequency_code(character())
+  expect_identical(unique(empty), empty)
+  expect_identical(
+    unique(x, fromLast = TRUE),
+    frequency_code(c("M", NA, "Q", "A"))
+  )
+})
+
 test_that("frequency-code vectors retain pillar presentation", {
   x <- frequency_code("M")
 
