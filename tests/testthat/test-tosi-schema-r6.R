@@ -102,6 +102,97 @@ test_that("domain inspection distinguishes absent and typed empty domains", {
   })
 })
 
+test_that("code-domain notes preserve alignment and optional defaults", {
+  codes <- c("A", "B", "C")
+  labels <- c("Alpha", "Beta", "Gamma")
+  notes <- c("Repeated note", NA_character_, "Repeated note")
+  domain <- tibble::tibble(code = codes, label = labels, note = notes)
+  for (cls in list(TosiSchemaComponent, TosiSchemaDimension)) {
+    plain <- cls$new("geo", "Geography", "string", codes, labels)
+    expect_identical(
+      plain$as_list(),
+      list(
+        id = "geo",
+        label = "Geography",
+        role = plain$role,
+        data_type = "string",
+        domain = list(code = codes, label = labels)
+      )
+    )
+    expect_identical(
+      cls$new("geo")$as_list(),
+      list(id = "geo", label = "geo", role = plain$role)
+    )
+    noted <- cls$new(
+      "geo",
+      domain_codes = codes,
+      domain_labels = labels,
+      domain_notes = notes
+    )
+    expect_identical(noted$domain_table(), domain)
+    expect_identical(noted$domain_size(), 3L)
+    expect_error(noted$domain <- list(), "read-only")
+    expect_error(noted$domain$note[[2L]] <- "changed", "read-only")
+    expect_identical(noted$as_list()$domain, as.list(domain))
+    empty <- cls$new(
+      "empty",
+      domain_codes = character(),
+      domain_labels = character(),
+      domain_notes = character()
+    )
+    expect_identical(
+      empty$domain_table(),
+      tibble::tibble(
+        code = character(),
+        label = character(),
+        note = character()
+      )
+    )
+    expect_identical(empty$domain_size(), 0L)
+    expect_error(cls$new("geo", domain_notes = notes), "requires.*domain_codes")
+    expect_error(
+      cls$new("geo", domain_codes = codes, domain_notes = "one"),
+      "parallel to codes"
+    )
+  }
+  expect_false("classification_id" %in% names(TosiSchemaComponent$new("geo")))
+})
+
+test_that("Dimension classification and notes survive binding read-only", {
+  dimension <- TosiSchemaDimension$new(
+    "geo",
+    "Geography",
+    "string",
+    c("A", "B", "C"),
+    NULL,
+    c("Repeated note", NA_character_, "Repeated note"),
+    "2"
+  )
+  expect_identical(dimension$classification_id, "2")
+  expect_error(dimension$classification_id <- "3", "read-only")
+  expect_error(dimension$classification_id[[1L]] <- "3", "read-only")
+  expect_identical(dimension$as_list()$classification_id, "2")
+  structure <- TosiStructure$new(
+    list(dimension, TosiSchemaValue$new()),
+    lang = "en",
+    observation_count = 2,
+    series_count = 1
+  )
+  before <- structure$as_list()
+  schema <- structure$as_schema(
+    "mock",
+    "example",
+    as.POSIXct("2025-01-01", tz = "UTC")
+  )
+  expect_identical(schema$components, structure$components)
+  expect_identical(schema$component("geo"), dimension)
+  expect_identical(schema$as_list()$components[[1L]], dimension$as_list())
+  expect_identical(structure$as_list(), before)
+  expect_identical(schema$n_observations(), 2)
+  expect_identical(schema$n_observations("potential"), 3)
+  expect_identical(schema$n_series(), 1)
+})
+
 test_that("Time and Frequency constructors retain their vector contracts", {
   for (domain in list(
     as.Date(c("2021-01-01", NA, "2020-01-01", "2021-01-01")),

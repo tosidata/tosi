@@ -13,6 +13,8 @@
 #' @field domain Optional ordered value domain.
 #' @param domain_codes Optional ordered character domain codes.
 #' @param domain_labels Optional character labels parallel to `domain_codes`.
+#' @param domain_notes Optional notes parallel to `domain_codes`, preserving
+#'   missing entries and repeated notes. Requires non-NULL `domain_codes`.
 #' @keywords internal
 #' @noRd
 TosiSchemaComponent <- R6Class(
@@ -24,7 +26,8 @@ TosiSchemaComponent <- R6Class(
       label = NULL,
       data_type = NULL,
       domain_codes = NULL,
-      domain_labels = NULL
+      domain_labels = NULL,
+      domain_notes = NULL
     ) {
       validate_scalar_string(id)
       validate_canonical_id(id)
@@ -36,6 +39,11 @@ TosiSchemaComponent <- R6Class(
       if (!is.null(domain_labels) && is.null(domain_codes)) {
         cli_abort(
           "{.field domain_labels} requires non-NULL {.field domain_codes}."
+        )
+      }
+      if (!is.null(domain_notes) && is.null(domain_codes)) {
+        cli_abort(
+          "{.arg domain_notes} requires non-NULL {.arg domain_codes}."
         )
       }
 
@@ -67,11 +75,16 @@ TosiSchemaComponent <- R6Class(
           labels[use_code] <- codes[use_code]
           domain$label <- labels
         }
+        if (!is.null(domain_notes)) {
+          if (length(domain_notes) != length(codes)) {
+            cli_abort("Domain notes must be parallel to codes.")
+          }
+          domain$note <- domain_notes
+        }
       }
 
       private$.id <- id
       private$.label <- label
-      private$.role <- "unknown"
       private$.data_type <- data_type
       private$.domain <- domain
     },
@@ -146,7 +159,7 @@ TosiSchemaComponent <- R6Class(
   private = list(
     .id = NULL,
     .label = NULL,
-    .role = NULL,
+    .role = "unknown",
     .data_type = NULL,
     .domain = NULL
   ),
@@ -187,6 +200,9 @@ TosiSchemaComponent <- R6Class(
 #' Dimension schema component
 #'
 #' @inherit TosiSchemaComponent
+#' @field classification_id Read-only optional classification identifier,
+#'   interpreted within its source, Dimension and version context.
+#' @param classification_id Optional source-selected classification identifier.
 #' @keywords internal
 #' @noRd
 TosiSchemaDimension <- R6Class(
@@ -199,10 +215,39 @@ TosiSchemaDimension <- R6Class(
       label = NULL,
       data_type = NULL,
       domain_codes = NULL,
-      domain_labels = NULL
+      domain_labels = NULL,
+      domain_notes = NULL,
+      classification_id = NULL
     ) {
-      super$initialize(id, label, data_type, domain_codes, domain_labels)
-      private$.role <- "dimension"
+      super$initialize(
+        id,
+        label,
+        data_type,
+        domain_codes,
+        domain_labels,
+        domain_notes
+      )
+      private$.classification_id <- classification_id
+    },
+
+    as_list = function() {
+      out <- super$as_list()
+      if (!is.null(self$classification_id)) {
+        out$classification_id <- self$classification_id
+      }
+      out
+    }
+  ),
+  private = list(
+    .role = "dimension",
+    .classification_id = NULL
+  ),
+  active = list(
+    classification_id = function(value) {
+      if (!missing(value)) {
+        cli_abort("{.field classification_id} is read-only.")
+      }
+      private$.classification_id
     }
   )
 )
@@ -265,7 +310,6 @@ TosiSchemaTime <- R6Class(
         label,
         data_type
       )
-      private$.role <- "time"
       private$.replaces_id <- replaces_id
       private$.domain <- list(time = time_domain)
       private$.ranges <- ranges
@@ -291,6 +335,7 @@ TosiSchemaTime <- R6Class(
     }
   ),
   private = list(
+    .role = "time",
     .replaces_id = NULL,
     .ranges = NULL
   ),
@@ -342,7 +387,6 @@ TosiSchemaFrequency <- R6Class(
         label,
         data_type
       )
-      private$.role <- "frequency"
       private$.replaces_id <- replaces_id
       private$.domain <- list(frequency = frequency_domain)
     },
@@ -356,6 +400,7 @@ TosiSchemaFrequency <- R6Class(
     }
   ),
   private = list(
+    .role = "frequency",
     .replaces_id = NULL
   ),
   active = list(
@@ -386,7 +431,6 @@ TosiSchemaValue <- R6Class(
         label = "value",
         data_type = "number"
       )
-      private$.role <- "value"
       private$.unit <- unit
     },
 
@@ -399,6 +443,7 @@ TosiSchemaValue <- R6Class(
     }
   ),
   private = list(
+    .role = "value",
     .unit = NULL
   ),
   active = list(
@@ -438,7 +483,6 @@ TosiSchemaAttribute <- R6Class(
         )
       }
       super$initialize(id, label, data_type, domain_codes, domain_labels)
-      private$.role <- "attribute"
       private$.level <- level
     },
 
@@ -451,6 +495,7 @@ TosiSchemaAttribute <- R6Class(
     }
   ),
   private = list(
+    .role = "attribute",
     .level = NULL
   ),
   active = list(
@@ -477,6 +522,13 @@ TosiSchemaAttribute <- R6Class(
 #' same return contract. `component$domain_size()` counts the stored primary
 #' domain vector without constructing a table: `NA_integer_` when unavailable,
 #' `0L` for a recorded empty domain.
+#'
+#' Code domains may include `note` alongside `code` and `label`, with one note
+#' per code in the same order; missing entries and repeated notes are retained.
+#' A Dimension may also expose a read-only `classification_id`. Interpret it
+#' within its source, Dimension and version context, not as a globally stable
+#' identifier. `$as_list()` retains both facts, and `$as_schema()` preserves
+#' them while sharing components.
 #'
 #' `print(component)` or `component$print(n = 3)` bounds displayed domain rows
 #' for Dimensions, Time, Frequency and unknown roles. Attributes show metadata
@@ -769,7 +821,7 @@ TosiStructure <- R6Class(
     #' are source-specific.
     #'
     #' @param id Exact component ID.
-    #' @return A tibble in source order with `code` and optional `label`,
+    #' @return A tibble in source order with `code` and optional `label`/`note`,
     #'   `time`, or `frequency` columns, preserving vector types including
     #'   native Date/POSIXct and frequency values. Returns `NULL` for an
     #'   unrecorded domain (including Value), or a typed zero-row tibble for a

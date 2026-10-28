@@ -18,6 +18,13 @@ same return contract. \code{component$domain_size()} counts the stored primary
 domain vector without constructing a table: \code{NA_integer_} when unavailable,
 \code{0L} for a recorded empty domain.
 
+Code domains may include \code{note} alongside \code{code} and \code{label}, with one note
+per code in the same order; missing entries and repeated notes are retained.
+A Dimension may also expose a read-only \code{classification_id}. Interpret it
+within its source, Dimension and version context, not as a globally stable
+identifier. \verb{$as_list()} retains both facts, and \verb{$as_schema()} preserves
+them while sharing components.
+
 \code{print(component)} or \code{component$print(n = 3)} bounds displayed domain rows
 for Dimensions, Time, Frequency and unknown roles. Attributes show metadata
 and domain size only; Value shows its unit when recorded. Printing returns
@@ -267,7 +274,7 @@ are source-specific.
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A tibble in source order with \code{code} and optional \code{label},
+    A tibble in source order with \code{code} and optional \code{label}/\code{note},
 \code{time}, or \code{frequency} columns, preserving vector types including
 native Date/POSIXct and frequency values. Returns \code{NULL} for an
 unrecorded domain (including Value), or a typed zero-row tibble for a
