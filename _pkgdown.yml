@@ -29,17 +29,15 @@ reference:
     contents:
       - TosiHelp
       - TosiMetadata
+      - TosiDescriptionSection
       - TosiSchema
       - TosiStructure
       - TosiProvenance
       - TosiSourceReference
       - TosiSourceDocument
-      - TosiIndexDocument
-  - title: Identifiers and frequency codes
+  - title: Identifiers, frequencies and time ranges
     contents:
       - id-vectors
       - object_path
       - new_frequency_code
-  - title: Search indexing
-    contents:
-      - tosi_index_document
+      - time_range

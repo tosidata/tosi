@@ -1,8 +1,8 @@
 #' Source-reference card
 #'
 #' `TosiSourceReference` is a compact card for a source document, included in
-#' [tosi_metadata()] and [tosi_index_document()] results. It holds a labelled
-#' URI and optional description, not the document body. To retrieve a supported
+#' [tosi_metadata()] results. It holds a labelled URI and optional description,
+#' not the document body. To retrieve a supported
 #' reference's text, use [tosi_source_reference()], which returns a
 #' [TosiSourceDocument]. Fields are read-only; direct and nested replacement
 #' fails.

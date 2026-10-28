@@ -260,7 +260,28 @@ test_that("Time normalizes range collections and projects plain records", {
 
   unavailable <- TosiSchemaTime$new()
   expect_null(unavailable$ranges)
-  expect_identical(unavailable$as_list()["ranges"], list(ranges = NULL))
+  expect_identical(
+    unavailable$as_list(),
+    list(
+      id = "time",
+      label = "time",
+      role = "time",
+      domain = list(time = NULL),
+      ranges = NULL
+    )
+  )
+  positional <- TosiSchemaTime$new("Year", "date", NULL, c(first, last), annual)
+  expect_identical(
+    positional$as_list(),
+    list(
+      id = "time",
+      label = "Year",
+      role = "time",
+      data_type = "date",
+      domain = list(time = c(first, last)),
+      ranges = projected[2]
+    )
+  )
   empty <- TosiSchemaTime$new(ranges = list())
   expect_identical(empty$ranges, list())
   expect_identical(empty$as_list()$ranges, list())
@@ -272,6 +293,43 @@ test_that("Time normalizes range collections and projects plain records", {
     hourly$as_list()$ranges,
     list(list(frequency = "H", first_period = datetime, last_period = datetime))
   )
+})
+
+test_that("Time without ranges preserves unknown coverage through binding", {
+  time <- TosiSchemaTime$new()
+  removed <- c("source_first_period", "source_last_period")
+  expect_false(any(
+    removed %in% names(formals(TosiSchemaTime$public_methods$initialize))
+  ))
+  expect_false(any(removed %in% names(time)))
+  expect_false(any(removed %in% names(time$as_list())))
+  expect_null(time$ranges)
+  expect_null(time$domain$time)
+  structure <- TosiStructure$new(list(time, TosiSchemaValue$new()), lang = "en")
+  before <- structure$as_list()
+  expect_null(structure$frequency)
+  expect_null(structure$frequencies())
+  expect_null(structure$domain_table("time"))
+  expect_identical(structure$n_observations(), NA_real_)
+  expect_identical(structure$n_series(), NA_real_)
+  expect_identical(structure$n_observations("potential"), NA_real_)
+  expect_identical(structure$n_series("potential"), NA_real_)
+
+  bound <- structure$as_schema(
+    "ec",
+    "flow_one",
+    as.POSIXct("2026-10-27", tz = "UTC")
+  )
+  expect_identical(bound$component("time"), time)
+  expect_identical(bound$component("time")$as_list(), time$as_list())
+  expect_identical(bound$as_list()$components, before$components)
+  expect_identical(structure$as_list(), before)
+  expect_identical(bound$component("time")$as_list(), before$components[[1L]])
+
+  annual <- time_range(as.Date("2024-01-01"), as.Date("2025-01-01"), "A")
+  ranged <- TosiSchemaTime$new(ranges = annual)
+  expect_identical(ranged$ranges, list(annual))
+  expect_null(ranged$domain$time)
 })
 
 test_that("Time owns collection membership and frequency uniqueness", {

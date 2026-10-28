@@ -126,8 +126,7 @@ connector.
 }
 
 For table descriptions, schemas, aggregation choices, and versions, see
-\code{\link[=tosi_metadata]{tosi_metadata()}}. For indexing, see \code{\link[=tosi_index_document]{tosi_index_document()}}. For connector
-instructions, see \code{\link[=tosi_help]{tosi_help()}}.
+\code{\link[=tosi_metadata]{tosi_metadata()}}. For connector instructions, see \code{\link[=tosi_help]{tosi_help()}}.
 }
 \section{Smart queries with tosi()}{
 

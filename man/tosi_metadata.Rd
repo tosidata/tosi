@@ -65,6 +65,5 @@ tosi_data_version("statfin/vaenn_14x2_px")
 }
 \seealso{
 \link{remote_frontends} for retrieval and result-language preferences,
-\code{\link[=tosi_index_document]{tosi_index_document()}} for search indexing, and \code{\link[=tosi_help]{tosi_help()}} for
-connector-specific selection instructions.
+and \code{\link[=tosi_help]{tosi_help()}} for connector-specific selection instructions.
 }

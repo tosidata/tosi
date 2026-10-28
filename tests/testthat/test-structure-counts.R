@@ -77,7 +77,7 @@ test_that("potential grids count replacements once and use the resolved key", {
   expect_identical(structure$n_observations("potential"), 10000000000)
 })
 
-test_that("conversion and index projection preserve counts and components", {
+test_that("conversion and schema projection preserve counts and components", {
   version <- as.POSIXct("2025-01-01", tz = "UTC")
   structure <- TosiStructure$new(
     list(
@@ -96,25 +96,13 @@ test_that("conversion and index projection preserve counts and components", {
   expect_identical(schema$n_observations(), 60)
   expect_identical(schema$n_series(), 8)
   expect_identical(structure$as_list(), before)
-  metadata <- TosiMetadata$new(
-    "mock",
-    "population",
-    version,
-    "en",
-    "Population",
-    "Mock"
-  )
-  projected <- TosiIndexDocument$new(metadata, schema)$as_list()
-  expect_identical(projected$schema, schema$as_list())
+  projected <- schema$as_list()
   expect_identical(
-    projected$schema$observation_count,
+    projected$observation_count,
     list(actual = 60, potential = 100)
   )
   expect_identical(
-    projected$schema$series_count,
+    projected$series_count,
     list(actual = 8, potential = 10)
   )
-  expect_false(any(
-    c("observation_count", "series_count") %in% names(projected)
-  ))
 })

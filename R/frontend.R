@@ -13,8 +13,7 @@
 #' - `tosi_source_reference()` retrieves a referenced source document.
 #'
 #' For table descriptions, schemas, aggregation choices, and versions, see
-#' [tosi_metadata()]. For indexing, see [tosi_index_document()]. For connector
-#' instructions, see [tosi_help()].
+#' [tosi_metadata()]. For connector instructions, see [tosi_help()].
 #'
 #' @section Smart queries with tosi():
 #' `tosi()` combines browsing, search, and retrieval. What it does depends on
@@ -201,8 +200,7 @@ tosi_schema <- function(
 #' - `tosi_data_version()`: a named `POSIXct` timestamp identifying the current
 #'   data version. Checking it does not fix a later retrieval's version.
 #' @seealso [remote_frontends] for retrieval and result-language preferences,
-#'   [tosi_index_document()] for search indexing, and [tosi_help()] for
-#'   connector-specific selection instructions.
+#'   and [tosi_help()] for connector-specific selection instructions.
 #' @examples
 #' \dontrun{
 #' tosi_metadata("statfin/vaenn_14x2_px")
@@ -273,30 +271,6 @@ tosi_url <- function(
 tosi_source_reference <- function(reference, lang = NULL) {
   perform_service_request(
     "tosi_source_reference",
-    supplied_service_args(match.call(), environment())
-  )
-}
-
-#' Get a document for search indexing
-#'
-#' @description
-#' Retrieve a table's metadata and schema as a search-index document in one
-#' natural language. This endpoint is experimental.
-#'
-#' @inheritParams remote_frontends
-#' @param lang One natural-language code, or `NULL` to use the session
-#'   preference and connector default.
-#' @returns A [TosiIndexDocument] object.
-#' @seealso [tosi_metadata()] for table descriptions and schemas, and
-#'   [remote_frontends] for retrieval.
-#' @examples
-#' \dontrun{
-#' tosi_index_document("wb_wdi/SP.POP.TOTL", lang = "en")
-#' }
-#' @export
-tosi_index_document <- function(path, lang = NULL) {
-  perform_service_request(
-    "tosi_index_document",
     supplied_service_args(match.call(), environment())
   )
 }

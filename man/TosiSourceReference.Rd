@@ -5,8 +5,8 @@
 \title{Source-reference card}
 \description{
 \code{TosiSourceReference} is a compact card for a source document, included in
-\code{\link[=tosi_metadata]{tosi_metadata()}} and \code{\link[=tosi_index_document]{tosi_index_document()}} results. It holds a labelled
-URI and optional description, not the document body. To retrieve a supported
+\code{\link[=tosi_metadata]{tosi_metadata()}} results. It holds a labelled URI and optional description,
+not the document body. To retrieve a supported
 reference's text, use \code{\link[=tosi_source_reference]{tosi_source_reference()}}, which returns a
 \link{TosiSourceDocument}. Fields are read-only; direct and nested replacement
 fails.

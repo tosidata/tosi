@@ -1,3 +1,16 @@
+test_that("index documents are absent from the public package", {
+  namespace <- asNamespace("tosi")
+  retired <- c("TosiIndexDocument", "tosi_index_document")
+
+  expect_equal(intersect(retired, getNamespaceExports("tosi")), character())
+  expect_false(exists("TosiIndexDocument", envir = namespace, inherits = FALSE))
+  expect_false(exists(
+    "tosi_index_document",
+    envir = namespace,
+    inherits = FALSE
+  ))
+})
+
 test_that("the remote frontend signatures and exports are exact", {
   expected <- list(
     tosi = alist(
@@ -34,7 +47,6 @@ test_that("the remote frontend signatures and exports are exact", {
       format = "tbl"
     ),
     tosi_source_reference = alist(reference = , lang = NULL),
-    tosi_index_document = alist(path = , lang = NULL),
     tosi_help = alist(topic = )
   )
 
@@ -134,11 +146,6 @@ test_that("each frontend forwards its operation and supplied arguments", {
       "tosi_source_reference",
       quote(tosi_source_reference("statfin/reference", "en")),
       list(reference = "statfin/reference", lang = "en")
-    ),
-    list(
-      "tosi_index_document",
-      quote(tosi_index_document("statfin/table", c("fi", "sv"))),
-      list(path = "statfin/table", lang = c("fi", "sv"))
     ),
     list(
       "tosi_help",
