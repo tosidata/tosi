@@ -1,6 +1,6 @@
 Package: tosi
 Title: R Client for the Hosted TosiData Service
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: person("Juha", "Itkonen", , "juha@tosidata.com", role = c("aut", "cre"))
 Description: Provides a remote-only client for the hosted TosiData service.
     Authenticated, blocking requests display incremental feedback and return

@@ -1,3 +1,10 @@
+# tosi 0.1.4
+
+* Remove `tosi_index_document()` and `TosiIndexDocument`; use `tosi_metadata()` and `tosi_schema()` separately.
+* Store metadata descriptions as ordered `TosiDescriptionSection` objects.
+* Add frequency-bearing `time_range()` values and `as_time_range()`, with schema methods for actual observation/series counts and domain sizes.
+* Retain domain notes and classification identifiers in schema components.
+
 # tosi 0.1.3
 
 * Replace calls to the removed `physical_column_names()` function with `schema$column_names(col_mode)`.
