@@ -3,8 +3,6 @@
 `TosiSourceReference` is a compact card for a source document, included
 in
 [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
-and
-[`tosi_index_document()`](https://tosidata.github.io/tosi/reference/tosi_index_document.md)
 results. It holds a labelled URI and optional description, not the
 document body. To retrieve a supported reference's text, use
 [`tosi_source_reference()`](https://tosidata.github.io/tosi/reference/remote_frontends.md),

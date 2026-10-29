@@ -74,9 +74,7 @@ tosi_data_version(path)
 ## See also
 
 [remote_frontends](https://tosidata.github.io/tosi/reference/remote_frontends.md)
-for retrieval and result-language preferences,
-[`tosi_index_document()`](https://tosidata.github.io/tosi/reference/tosi_index_document.md)
-for search indexing, and
+for retrieval and result-language preferences, and
 [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
 for connector-specific selection instructions.
 

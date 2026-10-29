@@ -1,5 +1,23 @@
 # Changelog
 
+## tosi 0.1.4
+
+- Remove `tosi_index_document()` and `TosiIndexDocument`; use
+  [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+  and
+  [`tosi_schema()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+  separately.
+- Store metadata descriptions as ordered `TosiDescriptionSection`
+  objects.
+- Add frequency-bearing
+  [`time_range()`](https://tosidata.github.io/tosi/reference/time_range.md)
+  values and
+  [`as_time_range()`](https://tosidata.github.io/tosi/reference/time_range.md),
+  with schema methods for actual observation/series counts and domain
+  sizes.
+- Retain domain notes and classification identifiers in schema
+  components.
+
 ## tosi 0.1.3
 
 - Replace calls to the removed `physical_column_names()` function with

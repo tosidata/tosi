@@ -49,6 +49,10 @@ all-missing logical vector; unrecognized codes are rejected. `NULL`
 stays `NULL`; empty character and factor inputs produce an empty vector
 with all canonical levels.
 
+[`unique()`](https://rdrr.io/r/base/unique.html) retains the
+frequency-code class and canonical levels, using ordinary factor
+duplicate handling and arguments.
+
 `new_frequency_code()` constructs a vector from integer positions in the
 canonical level order (1 for `"A"`, 5 for `"W2"`), with `NA_integer_`
 for missing values. It expects an integer vector; the default is empty.

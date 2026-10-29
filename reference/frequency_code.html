@@ -15,7 +15,7 @@ The remaining SDMX codes follow codelist order, with "N15" last.'></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">tosi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,6 +91,8 @@ vector. Factor inputs use their string codes, not their integer positions.
 Missing values are preserved, including an all-missing logical vector;
 unrecognized codes are rejected. <code>NULL</code> stays <code>NULL</code>; empty character and
 factor inputs produce an empty vector with all canonical levels.</p>
+<p><code><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique()</a></code> retains the frequency-code class and canonical levels, using
+ordinary factor duplicate handling and arguments.</p>
 <p><code>new_frequency_code()</code> constructs a vector from integer positions in the
 canonical level order (1 for <code>"A"</code>, 5 for <code>"W2"</code>), with <code>NA_integer_</code> for
 missing values. It expects an integer vector; the default is empty.</p>

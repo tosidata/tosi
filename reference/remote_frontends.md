@@ -18,8 +18,6 @@ List connectors, find tables, and retrieve data from TosiData.
 
 For table descriptions, schemas, aggregation choices, and versions, see
 [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md).
-For indexing, see
-[`tosi_index_document()`](https://tosidata.github.io/tosi/reference/tosi_index_document.md).
 For connector instructions, see
 [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md).
 

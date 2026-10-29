@@ -186,6 +186,8 @@ tracker](https://github.com/tosidata/tosi/issues).
   Connector help article
 - [`TosiMetadata`](https://tosidata.github.io/tosi/reference/TosiMetadata.md)
   : Descriptive metadata
+- [`TosiDescriptionSection`](https://tosidata.github.io/tosi/reference/TosiDescriptionSection.md)
+  : Source-backed description section
 - [`TosiSchema`](https://tosidata.github.io/tosi/reference/TosiSchema.md)
   : Source-bound table structure
 - [`TosiStructure`](https://tosidata.github.io/tosi/reference/TosiStructure.md)
@@ -196,10 +198,8 @@ tracker](https://github.com/tosidata/tosi/issues).
   : Source-reference card
 - [`TosiSourceDocument`](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md)
   : Retrieved source document
-- [`TosiIndexDocument`](https://tosidata.github.io/tosi/reference/TosiIndexDocument.md)
-  : Search-index document
 
-## Identifiers and frequency codes
+## Identifiers, frequencies and time ranges
 
 - [`validate_connector_id()`](https://tosidata.github.io/tosi/reference/id-vectors.md)
   [`validate_object_id()`](https://tosidata.github.io/tosi/reference/id-vectors.md)
@@ -214,11 +214,9 @@ tracker](https://github.com/tosidata/tosi/issues).
   [`frequency_code()`](https://tosidata.github.io/tosi/reference/frequency_code.md)
   [`is_frequency_code()`](https://tosidata.github.io/tosi/reference/frequency_code.md)
   : Canonical frequency-code vectors
-
-## Search indexing
-
-- [`tosi_index_document()`](https://tosidata.github.io/tosi/reference/tosi_index_document.md)
-  : Get a document for search indexing
+- [`time_range()`](https://tosidata.github.io/tosi/reference/time_range.md)
+  [`as_time_range()`](https://tosidata.github.io/tosi/reference/time_range.md)
+  : Frequency-bearing reference-period bounds
 
 # Articles
 
