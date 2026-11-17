@@ -163,38 +163,7 @@ TosiSchemaComponent <- R6Class(
     .data_type = NULL,
     .domain = NULL
   ),
-  active = list(
-    id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field id} is read-only.")
-      }
-      private$.id
-    },
-    label = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field label} is read-only.")
-      }
-      private$.label
-    },
-    role = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field role} is read-only.")
-      }
-      private$.role
-    },
-    data_type = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field data_type} is read-only.")
-      }
-      private$.data_type
-    },
-    domain = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field domain} is read-only.")
-      }
-      private$.domain
-    }
-  )
+  active = read_only_bindings(c("id", "label", "role", "data_type", "domain"))
 )
 
 #' Dimension schema component
@@ -242,14 +211,7 @@ TosiSchemaDimension <- R6Class(
     .role = "dimension",
     .classification_id = NULL
   ),
-  active = list(
-    classification_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field classification_id} is read-only.")
-      }
-      private$.classification_id
-    }
-  )
+  active = read_only_bindings("classification_id")
 )
 
 #' Time schema component
@@ -339,20 +301,7 @@ TosiSchemaTime <- R6Class(
     .replaces_id = NULL,
     .ranges = NULL
   ),
-  active = list(
-    replaces_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field replaces_id} is read-only.")
-      }
-      private$.replaces_id
-    },
-    ranges = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field ranges} is read-only.")
-      }
-      private$.ranges
-    }
-  )
+  active = read_only_bindings(c("replaces_id", "ranges"))
 )
 
 #' Frequency schema component
@@ -403,14 +352,7 @@ TosiSchemaFrequency <- R6Class(
     .role = "frequency",
     .replaces_id = NULL
   ),
-  active = list(
-    replaces_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field replaces_id} is read-only.")
-      }
-      private$.replaces_id
-    }
-  )
+  active = read_only_bindings("replaces_id")
 )
 
 #' Value schema component
@@ -446,14 +388,7 @@ TosiSchemaValue <- R6Class(
     .role = "value",
     .unit = NULL
   ),
-  active = list(
-    unit = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field unit} is read-only.")
-      }
-      private$.unit
-    }
-  )
+  active = read_only_bindings("unit")
 )
 
 #' Attribute schema component
@@ -498,14 +433,7 @@ TosiSchemaAttribute <- R6Class(
     .role = "attribute",
     .level = NULL
   ),
-  active = list(
-    level = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field level} is read-only.")
-      }
-      private$.level
-    }
-  )
+  active = read_only_bindings("level")
 )
 
 #' Source-independent table structure
@@ -989,38 +917,9 @@ TosiStructure <- R6Class(
       invisible(self)
     }
   ),
-  active = list(
-    object_type = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field object_type} is read-only.")
-      }
-      private$.object_type
-    },
-    lang = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field lang} is read-only.")
-      }
-      private$.lang
-    },
-    components = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field components} is read-only.")
-      }
-      private$.components
-    },
-    frequency = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field frequency} is read-only.")
-      }
-      private$.frequency
-    },
-    series_key = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field series_key} is read-only.")
-      }
-      private$.series_key
-    }
-  )
+  active = read_only_bindings(c(
+    "object_type", "lang", "components", "frequency", "series_key"
+  ))
 )
 
 #' Source-bound table structure
@@ -1142,24 +1041,5 @@ TosiSchema <- R6Class(
     .object_id = NULL,
     .data_version = NULL
   ),
-  active = list(
-    connector_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field connector_id} is read-only.")
-      }
-      private$.connector_id
-    },
-    object_id = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field object_id} is read-only.")
-      }
-      private$.object_id
-    },
-    data_version = function(value) {
-      if (!missing(value)) {
-        cli_abort("{.field data_version} is read-only.")
-      }
-      private$.data_version
-    }
-  )
+  active = read_only_bindings(c("connector_id", "object_id", "data_version"))
 )
