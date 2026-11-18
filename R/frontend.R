@@ -55,13 +55,15 @@
 #' @param query A connector ID, data path, URL, source-reference path, or search
 #'   string. Omit it or use `""` to list available connectors.
 #' @param path A data path beginning with a connector ID and `/`, followed by a
-#'   canonical object ID or a supported source identifier or path. Object paths
-#'   returned by catalogs and searches can be used directly.
+#'   canonical object ID or a supported source identifier or path. Use the
+#'   canonical `object_path` returned by catalogs and searches directly for
+#'   retrieval and inspection.
 #'
-#'   For StatFin (PX), `"statfin/vaenn/14x2.px"` identifies a source table whose
-#'   canonical object path is `"statfin/vaenn_14x2_px"`. For ECB,
-#'   `"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"` selects a series from `"ecb/FM"`; the
-#'   part after `"FM."` is interpreted as `source_filter`.
+#'   For StatFin (PX), put the native path `vaenn/14x2.px` after `statfin/`:
+#'   `"statfin/vaenn/14x2.px"`. The canonical object ID is `vaenn_14x2_px`,
+#'   and the catalog returns `"statfin/vaenn_14x2_px"` as `object_path`.
+#'   For ECB, `"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"` selects a series from
+#'   `"ecb/FM"`; the part after `"FM."` is interpreted as `source_filter`.
 #' @param reference A connector/reference path or platform source-reference URI.
 #'   Obtain a source-document reference from the `uri` field of a source-reference
 #'   card in table metadata. External HTTP(S) references are website links, not
@@ -70,9 +72,9 @@
 #'   retrieve. The accepted format and defaults depend on the connector. See
 #'   [tosi_help()] for connector-specific instructions.
 #' @param aggregation Optional named list selecting source classifications or
-#'   aggregation levels by dimension. Use `tosi_aggregation_options(path)` to
-#'   inspect available choices. See [tosi_help()] for connector-specific
-#'   instructions and examples.
+#'   aggregation levels by dimension. On connectors that support it, use
+#'   `tosi_aggregation_options(path)` to inspect available choices.
+#'   See [tosi_help()] for connector-specific instructions and examples.
 #' @param lang Optional explicit result language. A non-`NULL` value overrides
 #'   the session preference for that call.
 #' @param col_mode Column naming mode:
@@ -187,7 +189,9 @@ tosi_schema <- function(
 #' Inspect a table without retrieving its data. `tosi_metadata()` returns its
 #' descriptive metadata; `tosi_schema()` describes its structure and can apply
 #' `source_filter` and `aggregation` selections. `tosi_aggregation_options()`
-#' lists available aggregation choices by source dimension.
+#' lists available aggregation choices by source dimension on supporting
+#' connectors only. The `aggregation_options` column in the connector listing
+#' from `tosi()` indicates support.
 #' `tosi_data_version()` checks the current version independently of retrieval.
 #'
 #' @inheritParams remote_frontends
@@ -205,7 +209,6 @@ tosi_schema <- function(
 #' \dontrun{
 #' tosi_metadata("statfin/vaenn_14x2_px")
 #' tosi_schema("statfin/vaenn_14x2_px", lang = "en")
-#' tosi_aggregation_options("statfin/vaenn_14x2_px")
 #' tosi_data_version("statfin/vaenn_14x2_px")
 #' }
 #' @export

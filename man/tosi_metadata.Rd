@@ -17,22 +17,24 @@ tosi_data_version(path)
 }
 \arguments{
 \item{path}{A data path beginning with a connector ID and \code{/}, followed by a
-canonical object ID or a supported source identifier or path. Object paths
-returned by catalogs and searches can be used directly.
+canonical object ID or a supported source identifier or path. Use the
+canonical \code{object_path} returned by catalogs and searches directly for
+retrieval and inspection.
 
-For StatFin (PX), \code{"statfin/vaenn/14x2.px"} identifies a source table whose
-canonical object path is \code{"statfin/vaenn_14x2_px"}. For ECB,
-\code{"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"} selects a series from \code{"ecb/FM"}; the
-part after \code{"FM."} is interpreted as \code{source_filter}.}
+For StatFin (PX), put the native path \verb{vaenn/14x2.px} after \verb{statfin/}:
+\code{"statfin/vaenn/14x2.px"}. The canonical object ID is \code{vaenn_14x2_px},
+and the catalog returns \code{"statfin/vaenn_14x2_px"} as \code{object_path}.
+For ECB, \code{"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"} selects a series from
+\code{"ecb/FM"}; the part after \code{"FM."} is interpreted as \code{source_filter}.}
 
 \item{source_filter}{Optional selection of source values, series, or rows to
 retrieve. The accepted format and defaults depend on the connector. See
 \code{\link[=tosi_help]{tosi_help()}} for connector-specific instructions.}
 
 \item{aggregation}{Optional named list selecting source classifications or
-aggregation levels by dimension. Use \code{tosi_aggregation_options(path)} to
-inspect available choices. See \code{\link[=tosi_help]{tosi_help()}} for connector-specific
-instructions and examples.}
+aggregation levels by dimension. On connectors that support it, use
+\code{tosi_aggregation_options(path)} to inspect available choices.
+See \code{\link[=tosi_help]{tosi_help()}} for connector-specific instructions and examples.}
 
 \item{lang}{Optional explicit result language. A non-\code{NULL} value overrides
 the session preference for that call.}
@@ -52,14 +54,15 @@ data version. Checking it does not fix a later retrieval's version.
 Inspect a table without retrieving its data. \code{tosi_metadata()} returns its
 descriptive metadata; \code{tosi_schema()} describes its structure and can apply
 \code{source_filter} and \code{aggregation} selections. \code{tosi_aggregation_options()}
-lists available aggregation choices by source dimension.
+lists available aggregation choices by source dimension on supporting
+connectors only. The \code{aggregation_options} column in the connector listing
+from \code{tosi()} indicates support.
 \code{tosi_data_version()} checks the current version independently of retrieval.
 }
 \examples{
 \dontrun{
 tosi_metadata("statfin/vaenn_14x2_px")
 tosi_schema("statfin/vaenn_14x2_px", lang = "en")
-tosi_aggregation_options("statfin/vaenn_14x2_px")
 tosi_data_version("statfin/vaenn_14x2_px")
 }
 }
