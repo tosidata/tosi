@@ -16,10 +16,12 @@ supplied.}
 A character-backed \code{tosi_object_path} vector.
 }
 \description{
-\code{object_path()} identifies an object within a connector. Supply complete
-paths such as \code{"eurostat/tps00001"}, or supply connector IDs and object IDs
-separately to combine them. Each complete path has exactly one \code{/} between
-a canonical \code{\link[=connector_id]{connector_id()}} and a canonical \code{\link[=object_id]{object_id()}}.
+\code{object_path()} constructs a canonical object path. Supply a complete path
+such as \code{"example_connector/example_table"} (syntax only), or combine
+connector IDs and object IDs supplied separately. Each complete path has
+exactly one \code{/} between a canonical \code{\link[=connector_id]{connector_id()}} and a canonical
+\code{\link[=object_id]{object_id()}}. This does not check whether the object exists; use
+\code{\link[=tosi_catalog]{tosi_catalog()}} or \code{\link[=tosi_search]{tosi_search()}} to find objects.
 }
 \details{
 When combining vectors, a single connector ID is repeated for each object

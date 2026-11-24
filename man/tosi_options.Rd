@@ -35,9 +35,10 @@ Invisible \code{NULL}. The function changes settings without displaying
 them or returning your token.
 }
 \description{
-Set your service URL and access token before retrieving data. You can also
-choose your preferred languages. Settings apply to subsequent calls in the
-current R session.
+Before making requests, set a trusted service URL and your access token
+with \code{tosi_options()} or the \code{TOSI_URL} and \code{TOSI_TOKEN} environment
+variables. You can also choose your preferred languages. Settings made with
+\code{tosi_options()} apply to subsequent calls in the current R session.
 }
 \details{
 You only need to supply the settings you want to change. For example,

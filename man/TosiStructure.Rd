@@ -12,11 +12,16 @@ methods. Fields are read-only; direct and nested replacement fails.
 }
 \section{Component inspection}{
 
-Use \verb{$component(id)} for exact-ID lookup and \verb{$domain_table(id)} for the
-complete domain. Each component also provides \verb{$domain_table()} with the
-same return contract. \code{component$domain_size()} counts the stored primary
-domain vector without constructing a table: \code{NA_integer_} when unavailable,
-\code{0L} for a recorded empty domain.
+On a schema returned by \code{\link[=tosi_schema]{tosi_schema()}} or attached to a
+\link[=is_tosi_table]{retrieved table}, use \verb{$component(id)} to look up a component
+and \verb{$domain_table(id)} for its recorded domain. Each component also
+provides \verb{$domain_table()} with the same return contract. Use
+\verb{$column_names(col_mode)} to map component IDs to column names for a
+naming mode. This mapping does not describe the values in the cells.
+
+\code{component$domain_size()} counts the stored primary domain vector without
+constructing a table: \code{NA_integer_} when unavailable, \code{0L} for a recorded
+empty domain.
 
 Code domains may include \code{note} alongside \code{code} and \code{label}, with one note
 per code in the same order; missing entries and repeated notes are retained.

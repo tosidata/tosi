@@ -11,11 +11,12 @@
 \title{Find and retrieve tables}
 \usage{
 tosi(
-  query,
+  query = NULL,
   source_filter = NULL,
   aggregation = NULL,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -25,6 +26,7 @@ tosi_data(
   aggregation = NULL,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -36,6 +38,7 @@ tosi_url(
   url,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -43,7 +46,7 @@ tosi_source_reference(reference, lang = NULL)
 }
 \arguments{
 \item{query}{A connector ID, data path, URL, source-reference path, or search
-string. Omit it or use \code{""} to list available connectors.}
+string. Omit it or use \code{NULL} to list available connectors.}
 
 \item{source_filter}{Optional selection of source values, series, or rows to
 retrieve. The accepted format and defaults depend on the connector. See
@@ -66,39 +69,37 @@ the session preference for that call.}
 
 This changes column names, not the values in the columns.}
 
-\item{format}{Output format for data retrieval. Currently only \code{"tbl"} is
-supported, returning a \code{tosi_table}.}
+\item{domain_mode}{For data retrieval, \code{"labels"} (default) requests labels
+in dimension cells, and \code{"codes"} requests source codes where supported.
+Unlike \code{col_mode}, this changes cell values, not column names.}
+
+\item{format}{Output format for data retrieval. Use \code{"tbl"} to get a
+\link[=is_tosi_table]{tosi_table} in R.}
 
 \item{path}{A data path beginning with a connector ID and \code{/}, followed by a
 canonical object ID or a supported source identifier or path. Use the
-canonical \code{object_path} returned by catalogs and searches directly for
-retrieval and inspection.
-
-For StatFin (PX), put the native path \verb{vaenn/14x2.px} after \verb{statfin/}:
-\code{"statfin/vaenn/14x2.px"}. The canonical object ID is \code{vaenn_14x2_px},
-and the catalog returns \code{"statfin/vaenn_14x2_px"} as \code{object_path}.
-For ECB, \code{"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"} selects a series from
-\code{"ecb/FM"}; the part after \code{"FM."} is interpreted as \code{source_filter}.}
+\code{object_path} returned by catalogs and searches directly for retrieval and
+inspection.}
 
 \item{connector_id}{A connector identifier.}
 
-\item{prefix}{Restrict catalog entries to tables whose canonical object IDs
-start with this prefix.}
+\item{prefix}{Keep catalog entries whose canonical object IDs start with
+this prefix. Matching ignores case and does not search table titles.}
 
 \item{search_string}{Search terms.}
 
 \item{url}{A source URL recognized by a connector.}
 
-\item{reference}{A connector/reference path or platform source-reference URI.
-Obtain a source-document reference from the \code{uri} field of a source-reference
-card in table metadata. External HTTP(S) references are website links, not
-documents this endpoint retrieves.}
+\item{reference}{A platform source-reference URI from a card's \verb{$uri} in
+\code{metadata$source_references}, or its \code{connector_id/reference_id} path.
+Open external HTTP(S) references as links; \code{tosi_source_reference()} does
+not fetch them.}
 }
 \value{
 \itemize{
 \item \code{tosi()} returns one of the following, depending on \code{query}:
 \itemize{
-\item No query or \code{""}: a \code{tosi_connector_catalog} tibble listing connectors.
+\item No query or \code{NULL}: a \code{tosi_connector_catalog} tibble listing connectors.
 \item A connector ID, catalog prefix, or supported catalog URL: a
 \code{tosi_dataset_catalog} tibble listing tables.
 \item A data path identifying a table or a supported table URL: a \code{tosi_table}
@@ -106,7 +107,8 @@ containing the data.
 \item Search terms: a \code{tosi_search_results} tibble of matching tables.
 \item A source-reference path: a \link{TosiSourceDocument}.
 }
-\item \code{tosi_data()}: a \code{tosi_table}.
+\item \code{tosi_data()}: a \link[=is_tosi_table]{tosi_table}, a tibble with an embedded
+schema. Check its \code{result_scope} before using the rows as complete data.
 \item \code{tosi_url()}: a \code{tosi_table} or catalog result.
 \item \code{tosi_catalog()}: a \code{tosi_dataset_catalog} tibble.
 \item \code{tosi_search()}: a \code{tosi_search_results} tibble.
@@ -115,75 +117,81 @@ the compact \link{TosiSourceReference} cards included in other results.
 }
 }
 \description{
-List connectors, find tables, and retrieve data from TosiData.
+List connectors, find tables, and retrieve data from TosiData. Set up a
+trusted service connection first; see \code{\link[=tosi_options]{tosi_options()}}.
 \itemize{
-\item \code{tosi()} is a smart, multipurpose tool for common tasks. See
-\href{#smart-queries-with-tosi-}{Smart queries with tosi()}.
+\item \code{tosi()} with no query lists available connectors and their IDs.
+\item \code{tosi_catalog()} lists tables provided by one connector.
+\item \code{tosi_search()} searches for tables across connector catalogs.
 \item \code{tosi_data()} retrieves a table identified by a data path.
-\item \code{tosi_catalog()} lists tables provided by a connector.
-\item \code{tosi_search()} searches for tables matching search terms.
-\item \code{tosi_url()} retrieves a table or catalog from a URL recognized by a
-connector.
-\item \code{tosi_source_reference()} retrieves a referenced source document.
+\item \code{tosi_url()} retrieves a table or catalog from a supported source URL.
+\item \code{tosi_source_reference()} retrieves a supported source document.
 }
 
-For table descriptions, schemas, aggregation choices, and versions, see
-\code{\link[=tosi_metadata]{tosi_metadata()}}. For connector instructions, see \code{\link[=tosi_help]{tosi_help()}}.
+Catalogs and search results list objects, not observation rows. Use the
+selected entry's canonical \code{object_path} for \link[=tosi_metadata]{inspection}
+and retrieval.
 }
 \section{Smart queries with tosi()}{
 
-\code{tosi()} combines browsing, search, and retrieval. What it does depends on
-what you supply as \code{query}:
+\code{tosi(query)} routes the query based on what you supply:
 \itemize{
-\item \strong{No query:} \code{tosi()} or \code{tosi("")} lists available connectors and their
-IDs.
-\item \strong{Connector ID:} \code{tosi("eurostat")} lists the tables provided by the
-Eurostat connector.
-\item \strong{Data path:} \code{tosi("eurostat/tps00001")} retrieves the table's data.
-\item \strong{Source URL:} \code{tosi(url)} identifies the connector and retrieves the
-table identified by a supported HTTP(S) URL. A URL identifying a connector
-or catalog prefix returns a table listing instead.
-\item \strong{Search terms:} \code{tosi("internet use")} searches for tables across
-connector catalogs.
-\item \strong{Source-reference path:} a path of the form
-\verb{source-reference/<connector>/<reference>} retrieves the referenced
-document, where supported.
+\item \strong{Connector ID:} \code{tosi("eurostat")} lists the connector's tables.
+\item \strong{Data path:} \code{tosi("eurostat/sdg_07_40")} retrieves the table's data.
+\item \strong{Source URL:} a supported HTTP(S) URL can identify a table or a catalog.
+\item \strong{Search terms:} \code{tosi("renewable energy")} searches connector catalogs.
+\item \strong{Source-reference path:} \verb{source-reference/<connector>/<reference>}
+retrieves the referenced document, where supported.
 }
 
-Catalogs and search results contain a canonical \code{object_path} for each
-entry. Pass it as a data path to \code{tosi()} to retrieve the table's data.
+Where a connector supports browsing by partial path, a path that matches a
+prefix but not an exact table returns a catalog, even if it lists only one
+table. Use \code{tosi_data()} when you need a table: an unresolved path raises an
+error rather than returning a catalog.
+}
 
-Some connectors also support browsing by partial path. If the connector
-cannot identify an exact table, \code{tosi()} lists tables whose paths start with
-the supplied prefix. Even a single match is returned as a catalog, not data.
-Use \code{\link[=tosi_data]{tosi_data()}} when you require data: an unresolved path then raises an
-error instead of returning a catalog.
+\section{Select observations}{
+
+\code{source_filter} selects source values, series, or rows. \code{aggregation}
+selects source-provided classifications or levels, not a calculation over
+the returned rows. See \code{\link[=tosi_help]{tosi_help()}} for available connector instructions
+and \code{\link[=tosi_aggregation_options]{tosi_aggregation_options()}} for supported choices. Pass the same
+selections to \code{\link[=tosi_schema]{tosi_schema()}} to inspect the proposed request.
+
+For a source URL, use \code{tosi()} with \code{source_filter} or \code{aggregation} if you
+need explicit selections. \code{tosi_url()} does not take these arguments.
 }
 
 \section{Result language}{
 
-Use \code{lang} to select the result language, for example \code{lang = "en"} for
-English. This overrides any language specified in a source URL without
-changing your session preferences.
+For data retrieval, request one language, for example \code{lang = "en"} for
+English. An explicit language overrides a language indicated by a source URL
+without changing your session preferences. If neither is given, TosiData
+uses the first available language in your \code{\link[=tosi_options]{tosi_options()}} preferences, or
+the source's default. The connector listing shows languages for each
+connector, not necessarily for every table it provides.
 
-When no explicit or URL language is supplied, TosiData uses the first
-available language in your \code{\link[=tosi_options]{tosi_options()}} preferences. If no preference is
-available, it uses the source's first language. The connector listing returned
-by \code{tosi()} shows the available languages.
+In \code{\link[=tosi_catalog]{tosi_catalog()}}, \code{lang = c("fi", "en")} keeps existing Finnish and
+English catalog labels, and \code{lang = "all_languages"} keeps all available
+labels. This does not request multiple copies of the table data. In
+\code{\link[=tosi_search]{tosi_search()}}, \code{lang} controls which labels are displayed, not which
+languages are searched.
 }
 
 \examples{
 \dontrun{
-# After configuring your connection with tosi_options():
-tosi()                               # List connectors
-tosi("statfin")                      # Browse tables
-tosi_data("statfin/vaenn/14x2.px")   # Retrieve a table by source path
-tosi_data("statfin/vaenn_14x2_px")   # Or by canonical object path
+# After setting up a trusted connection (see ?tosi_options):
+tosi()
+tosi_search("renewable energy", lang = "en")
+tosi_catalog("eurostat", prefix = "sdg_07_40", lang = "en")
 
-# Request English for this call only.
-tosi_data("statfin/vaenn_14x2_px", lang = "en")
+# Use the object_path of the catalog entry you want.
+path <- "eurostat/sdg_07_40"
+data <- tosi_data(path, lang = "en")
+attr(data, "result_scope")
 }
 }
 \seealso{
-\code{\link[=tosi_options]{tosi_options()}} for connection setup and session preferences.
+\code{\link[=tosi_options]{tosi_options()}} for connection setup, \code{\link[=tosi_metadata]{tosi_metadata()}} for
+inspection, and \code{\link[=tosi_help]{tosi_help()}} for available connector instructions.
 }

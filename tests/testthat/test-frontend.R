@@ -14,11 +14,12 @@ test_that("index documents are absent from the public package", {
 test_that("the remote frontend signatures and exports are exact", {
   expected <- list(
     tosi = alist(
-      query = ,
+      query = NULL,
       source_filter = NULL,
       aggregation = NULL,
       lang = NULL,
       col_mode = c("labels", "safe_labels", "ids"),
+      domain_mode = c("labels", "codes"),
       format = "tbl"
     ),
     tosi_data = alist(
@@ -27,6 +28,7 @@ test_that("the remote frontend signatures and exports are exact", {
       aggregation = NULL,
       lang = NULL,
       col_mode = c("labels", "safe_labels", "ids"),
+      domain_mode = c("labels", "codes"),
       format = "tbl"
     ),
     tosi_schema = alist(
@@ -44,10 +46,11 @@ test_that("the remote frontend signatures and exports are exact", {
       url = ,
       lang = NULL,
       col_mode = c("labels", "safe_labels", "ids"),
+      domain_mode = c("labels", "codes"),
       format = "tbl"
     ),
     tosi_source_reference = alist(reference = , lang = NULL),
-    tosi_help = alist(topic = )
+    tosi_help = alist(topic = NULL)
   )
 
   for (name in names(expected)) {
@@ -75,25 +78,27 @@ test_that("each frontend forwards its operation and supplied arguments", {
   cases <- list(
     list(
       "tosi",
-      quote(tosi("population", NULL, selection, "en", "ids", "tbl")),
+      quote(tosi("population", NULL, selection, "en", "ids", format = "tbl")),
       list(
         query = "population",
         source_filter = NULL,
         aggregation = selection,
         lang = "en",
         col_mode = "ids",
+        domain_mode = "labels",
         format = "tbl"
       )
     ),
     list(
       "tosi_data",
-      quote(tosi_data("statfin/table", selection, NULL, "fi", "labels", "tbl")),
+      quote(tosi_data("statfin/table", selection, NULL, "fi", "safe", "cod")),
       list(
         path = "statfin/table",
         source_filter = selection,
         aggregation = NULL,
         lang = "fi",
-        col_mode = "labels",
+        col_mode = "safe_labels",
+        domain_mode = "codes",
         format = "tbl"
       )
     ),
@@ -134,11 +139,12 @@ test_that("each frontend forwards its operation and supplied arguments", {
     ),
     list(
       "tosi_url",
-      quote(tosi_url("https://example.invalid/table", "en", "ids", "tbl")),
+      quote(tosi_url("https://example.invalid/table", "en", "ids", format = "tbl")),
       list(
         url = "https://example.invalid/table",
         lang = "en",
         col_mode = "ids",
+        domain_mode = "labels",
         format = "tbl"
       )
     ),
@@ -190,7 +196,7 @@ test_that("named selectors and references use literal server argument names", {
       ),
       list(
         operation = "tosi_catalog",
-        args = list(connector_id = "fred", prefix = "release")
+        args = list(connector_id = "fred", prefix = "release", lang = NULL)
       ),
       list(
         operation = "tosi_source_reference",
@@ -200,44 +206,19 @@ test_that("named selectors and references use literal server argument names", {
   )
 })
 
-test_that("missing, null, empty, and defaulted arguments stay distinct", {
-  calls <- list()
-  local_mocked_bindings(perform_service_request = function(operation, args) {
-    calls[[length(calls) + 1L]] <<- list(operation = operation, args = args)
-    NULL
-  })
-  forward_tosi <- function(query) tosi(query)
-  forward_help <- function(topic) tosi_help(topic)
-  forward_schema <- function(path, lang) tosi_schema(path, lang = lang)
+test_that("NULL uses the default query, help topic, and selectors", {
+  local_mocked_bindings(perform_service_request = function(operation, args) args)
 
-  tosi()
-  tosi(NULL)
-  tosi("")
-  tosi_data("statfin/table")
-  tosi_url("https://example.invalid/table")
-  tosi_help()
-  tosi_help(NULL)
-  forward_tosi()
-  forward_help()
-  forward_schema("statfin/table")
+  expect_identical(tosi()["query"], list(query = NULL))
+  expect_identical(tosi(NULL), tosi())
+  expect_identical(tosi_help()$topic, "index")
+  expect_identical(tosi_help(NULL), tosi_help())
 
-  empty <- structure(list(), names = character())
-  expect_identical(
-    calls,
-    list(
-      list(operation = "tosi", args = empty),
-      list(operation = "tosi", args = list(query = NULL)),
-      list(operation = "tosi", args = list(query = "")),
-      list(operation = "tosi_data", args = list(path = "statfin/table")),
-      list(
-        operation = "tosi_url",
-        args = list(url = "https://example.invalid/table")
-      ),
-      list(operation = "tosi_help", args = empty),
-      list(operation = "tosi_help", args = list(topic = NULL)),
-      list(operation = "tosi", args = empty),
-      list(operation = "tosi_help", args = empty),
-      list(operation = "tosi_schema", args = list(path = "statfin/table"))
-    )
-  )
+  args <- tosi_data("statfin/table")
+  expect_identical(tosi_data("statfin/table", lang = NULL), args)
+  expect_identical(tosi_data("statfin/table", col_mode = NULL), args)
+  expect_identical(tosi_data("statfin/table", domain_mode = NULL), args)
+  expect_identical(args$col_mode, "labels")
+  expect_identical(args$domain_mode, "labels")
+  expect_error(tosi_data())
 })

@@ -2,10 +2,10 @@
 #'
 #' `TosiSourceReference` is a compact card for a source document, included in
 #' [tosi_metadata()] results. It holds a labelled URI and optional description,
-#' not the document body. To retrieve a supported
-#' reference's text, use [tosi_source_reference()], which returns a
-#' [TosiSourceDocument]. Fields are read-only; direct and nested replacement
-#' fails.
+#' not the document body. Pass `$uri` to [tosi_source_reference()] for a
+#' `tosi://source-reference/` URI; the result is a [TosiSourceDocument]. Open an
+#' external HTTP(S) URI as a link instead. Fields are read-only; direct and
+#' nested replacement fails.
 #'
 #' @field uri Single HTTP(S) or platform source-reference URI.
 #' @field title Single human-readable label.

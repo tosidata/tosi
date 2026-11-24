@@ -20,9 +20,8 @@
 #'   empty when absent. Existing instances are retained without cloning.
 #' @field subject_area Optional subject-area label.
 #' @field next_update Optional next-update date, timestamp, or string.
-#' @field source_references A [TosiSourceReference] card or list of cards,
-#'   not retrieved [TosiSourceDocument] objects. A single card becomes a
-#'   one-element list.
+#' @field source_references A list of [TosiSourceReference] cards, empty if
+#'   none are available. The cards contain links, not document bodies.
 #'
 #' @export
 TosiMetadata <- R6Class(

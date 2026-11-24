@@ -27,16 +27,23 @@ metadata guarantee is made after conversion.
 }
 \description{
 A \code{tosi_table} is a tibble with a schema, title, source label, provenance,
-and \code{result_scope} stored as attributes. \code{result_scope = "complete"} means
-the table contains all rows for the normalized request, not necessarily
-every row in the source. \code{result_scope = "preview"} means the result is
-intentionally limited and may need a source filter for complete data.
-Result scope is not a table column or schema component.
+and \code{result_scope} stored as attributes. Check \code{attr(x, "result_scope")}
+before using the rows:
 }
 \details{
-\code{attr(x, "schema")} is a \link{TosiSchema}, directly usable through its
-inherited schema methods. It holds the sole canonical source identity and
-version through \verb{$connector_id}, \verb{$object_id}, and \verb{$data_version}; these are
-not independently stored on the table.
-Metadata describes the result at delivery. Wrangling may alter or discard it.
+\itemize{
+\item \code{"complete"}: all rows for the request as interpreted by the connector,
+including filters and defaults. This does not necessarily mean all rows
+in the source.
+\item \code{"preview"}: intentionally limited rows. Refine the selection using the
+available \link[=tosi_help]{connector instructions} and check the new result.
+}
+
+Result scope is not a table column or schema component.
+
+\code{attr(x, "schema")} is a \link{TosiSchema} with the delivered object's
+\verb{$connector_id}, \verb{$object_id}, and \verb{$data_version}. See \code{names(x)} for the
+actual column names and \link{TosiStructure} for mapping component IDs to names.
+Use \code{\link[=provenance]{provenance()}} for the result's history. These attributes describe the
+table as delivered; wrangling may alter or discard them.
 }

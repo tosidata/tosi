@@ -30,6 +30,7 @@ new_tosi_table <- function(
   x,
   schema,
   col_mode,
+  domain_mode = NULL,
   title = NULL,
   source_label = NULL,
   provenance = NULL,
@@ -75,6 +76,7 @@ new_tosi_table <- function(
     as.list(x),
     schema = schema,
     col_mode = col_mode,
+    domain_mode = domain_mode,
     title = title,
     source_label = source_label,
     provenance = provenance,
@@ -88,17 +90,22 @@ new_tosi_table <- function(
 #' Retrieved tables
 #'
 #' A `tosi_table` is a tibble with a schema, title, source label, provenance,
-#' and `result_scope` stored as attributes. `result_scope = "complete"` means
-#' the table contains all rows for the normalized request, not necessarily
-#' every row in the source. `result_scope = "preview"` means the result is
-#' intentionally limited and may need a source filter for complete data.
+#' and `result_scope` stored as attributes. Check `attr(x, "result_scope")`
+#' before using the rows:
+#'
+#' - `"complete"`: all rows for the request as interpreted by the connector,
+#'   including filters and defaults. This does not necessarily mean all rows
+#'   in the source.
+#' - `"preview"`: intentionally limited rows. Refine the selection using the
+#'   available [connector instructions][tosi_help] and check the new result.
+#'
 #' Result scope is not a table column or schema component.
 #'
-#' `attr(x, "schema")` is a [TosiSchema], directly usable through its
-#' inherited schema methods. It holds the sole canonical source identity and
-#' version through `$connector_id`, `$object_id`, and `$data_version`; these are
-#' not independently stored on the table.
-#' Metadata describes the result at delivery. Wrangling may alter or discard it.
+#' `attr(x, "schema")` is a [TosiSchema] with the delivered object's
+#' `$connector_id`, `$object_id`, and `$data_version`. See `names(x)` for the
+#' actual column names and [TosiStructure] for mapping component IDs to names.
+#' Use [provenance()] for the result's history. These attributes describe the
+#' table as delivered; wrangling may alter or discard them.
 #'
 #' @param x Any R object.
 #' @return `TRUE` if `x` inherits from `"tosi_table"`, `FALSE` otherwise.

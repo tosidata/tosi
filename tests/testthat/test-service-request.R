@@ -244,9 +244,9 @@ test_that("cache identity includes captured credentials and effective arguments"
   fetch(aggregation = list(region = "total"))
   fetch(col_mode = "ids")
   fetch(format = "tbl")
-  expect_length(peer$post_requests, 10L)
-  expect_length(peer$get_requests, 10L)
-  expect_length(cache$keys(), 10L)
+  expect_length(peer$post_requests, 8L)
+  expect_length(peer$get_requests, 8L)
+  expect_length(cache$keys(), 8L)
   expect_false(any(str_detect(cache$keys(), fixed("token"))))
 })
 
@@ -623,7 +623,7 @@ test_that("an explicit language does not change later request defaults", {
     ~ httr2::req_get_body(.x, obfuscated = "reveal")
   )
   expect_identical(bodies[[1L]]$args$lang, "sv")
-  expect_false("lang" %in% names(bodies[[2L]]$args))
+  expect_null(bodies[[2L]]$args$lang)
   expect_identical(
     map(bodies, ~ .x$args$options),
     rep(list(list(language_preference = c("fi", "en"))), 2L)

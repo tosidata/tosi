@@ -18,14 +18,8 @@ tosi_data_version(path)
 \arguments{
 \item{path}{A data path beginning with a connector ID and \code{/}, followed by a
 canonical object ID or a supported source identifier or path. Use the
-canonical \code{object_path} returned by catalogs and searches directly for
-retrieval and inspection.
-
-For StatFin (PX), put the native path \verb{vaenn/14x2.px} after \verb{statfin/}:
-\code{"statfin/vaenn/14x2.px"}. The canonical object ID is \code{vaenn_14x2_px},
-and the catalog returns \code{"statfin/vaenn_14x2_px"} as \code{object_path}.
-For ECB, \code{"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"} selects a series from
-\code{"ecb/FM"}; the part after \code{"FM."} is interpreted as \code{source_filter}.}
+\code{object_path} returned by catalogs and searches directly for retrieval and
+inspection.}
 
 \item{source_filter}{Optional selection of source values, series, or rows to
 retrieve. The accepted format and defaults depend on the connector. See
@@ -46,27 +40,36 @@ the session preference for that call.}
 \item \code{tosi_schema()}: a \link{TosiSchema} object.
 \item \code{tosi_aggregation_options()}: a named list of available aggregation choices
 grouped by source dimension.
-\item \code{tosi_data_version()}: a named \code{POSIXct} timestamp identifying the current
-data version. Checking it does not fix a later retrieval's version.
+\item \code{tosi_data_version()}: a \code{POSIXct} timestamp named by the canonical
+object path. It is not necessarily an uncached check and does not pin a
+later retrieval. For the version actually delivered, use the schema
+attached to the \link[=is_tosi_table]{returned table}.
 }
 }
 \description{
-Inspect a table without retrieving its data. \code{tosi_metadata()} returns its
-descriptive metadata; \code{tosi_schema()} describes its structure and can apply
-\code{source_filter} and \code{aggregation} selections. \code{tosi_aggregation_options()}
-lists available aggregation choices by source dimension on supporting
-connectors only. The \code{aggregation_options} column in the connector listing
-from \code{tosi()} indicates support.
-\code{tosi_data_version()} checks the current version independently of retrieval.
+These functions return information about a table, not observation rows.
+\code{tosi_metadata()} describes the subject and source. \code{tosi_schema()}
+describes the structure, including the components and their available
+domains. Use the same \code{source_filter} and \code{aggregation} with \code{tosi_schema()}
+as for the planned data request.
+
+\code{tosi_aggregation_options()} lists source-provided choices where supported.
+Look for \code{TRUE} in the \code{aggregation_options} column of the connector listing
+from \code{tosi()}. \code{tosi_data_version()} checks the version reported by the
+connector independently of retrieval.
 }
 \examples{
 \dontrun{
-tosi_metadata("statfin/vaenn_14x2_px")
-tosi_schema("statfin/vaenn_14x2_px", lang = "en")
-tosi_data_version("statfin/vaenn_14x2_px")
+# After setting up a trusted connection (see ?tosi_options):
+path <- "eurostat/sdg_07_40"
+metadata <- tosi_metadata(path, lang = "en")
+metadata$print(details = TRUE)
+schema <- tosi_schema(path, lang = "en")
+schema$components
+tosi_data_version(path)
 }
 }
 \seealso{
-\link{remote_frontends} for retrieval and result-language preferences,
-and \code{\link[=tosi_help]{tosi_help()}} for connector-specific selection instructions.
+\code{\link[=tosi_data]{tosi_data()}} for retrieval and \code{\link[=tosi_help]{tosi_help()}} for available
+connector-specific selection instructions.
 }

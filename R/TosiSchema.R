@@ -445,11 +445,16 @@ TosiSchemaAttribute <- R6Class(
 #' methods. Fields are read-only; direct and nested replacement fails.
 #'
 #' @section Component inspection:
-#' Use `$component(id)` for exact-ID lookup and `$domain_table(id)` for the
-#' complete domain. Each component also provides `$domain_table()` with the
-#' same return contract. `component$domain_size()` counts the stored primary
-#' domain vector without constructing a table: `NA_integer_` when unavailable,
-#' `0L` for a recorded empty domain.
+#' On a schema returned by [tosi_schema()] or attached to a
+#' [retrieved table][is_tosi_table], use `$component(id)` to look up a component
+#' and `$domain_table(id)` for its recorded domain. Each component also
+#' provides `$domain_table()` with the same return contract. Use
+#' `$column_names(col_mode)` to map component IDs to column names for a
+#' naming mode. This mapping does not describe the values in the cells.
+#'
+#' `component$domain_size()` counts the stored primary domain vector without
+#' constructing a table: `NA_integer_` when unavailable, `0L` for a recorded
+#' empty domain.
 #'
 #' Code domains may include `note` alongside `code` and `label`, with one note
 #' per code in the same order; missing entries and repeated notes are retained.

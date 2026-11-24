@@ -12,32 +12,32 @@ articles:
       - starts_with("articles/getting-started")
 
 reference:
+  - title: Connect and get help
+    contents:
+      - tosi_options
+      - tosi_help
+      - TosiHelp
+      - tosi_cache_clear
   - title: Find and retrieve tables
     contents:
       - remote_frontends
-      - tosi_help
-      - tosi_options
-      - tosi_cache_clear
-  - title: Inspect table metadata and structure
+  - title: Inspect metadata, structure and versions
     contents:
       - tosi_metadata
+      - TosiMetadata
+      - TosiDescriptionSection
+      - TosiSourceReference
+      - TosiSourceDocument
+      - TosiSchema
+      - TosiStructure
   - title: Work with tables and provenance
     contents:
       - is_tosi_table
       - provenance
-  - title: Response objects
-    contents:
-      - TosiHelp
-      - TosiMetadata
-      - TosiDescriptionSection
-      - TosiSchema
-      - TosiStructure
       - TosiProvenance
-      - TosiSourceReference
-      - TosiSourceDocument
   - title: Identifiers, frequencies and time ranges
     contents:
       - id-vectors
       - object_path
-      - new_frequency_code
+      - frequency_code
       - time_range

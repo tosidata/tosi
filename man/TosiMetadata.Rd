@@ -37,9 +37,8 @@ empty when absent. Existing instances are retained without cloning.}
 
     \item{\code{next_update}}{Optional next-update date, timestamp, or string.}
 
-    \item{\code{source_references}}{A \link{TosiSourceReference} card or list of cards,
-not retrieved \link{TosiSourceDocument} objects. A single card becomes a
-one-element list.}
+    \item{\code{source_references}}{A list of \link{TosiSourceReference} cards, empty if
+none are available. The cards contain links, not document bodies.}
   }
   \if{html}{\out{</div>}}
 }

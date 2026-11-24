@@ -4,26 +4,29 @@
 \alias{tosi_help}
 \title{Read connector help}
 \usage{
-tosi_help(topic)
+tosi_help(topic = NULL)
 }
 \arguments{
-\item{topic}{A help topic such as \code{"tulli"}; omit to list available topics.}
+\item{topic}{A help topic from the index, such as \code{"tulli"}. Omit it or
+use \code{"index"} to read the index.}
 }
 \value{
-A \link{TosiHelp} object containing English Markdown.
+A \link{TosiHelp} object containing English Markdown. Use \code{print()} to
+display it in a script or \verb{$content} to access the text.
 }
 \description{
-List available help topics or retrieve a connector-help article. For example,
-\code{tosi_help("tulli")} explains Uljas classifications, source filters, and
-selection defaults.
+Start with \code{tosi_help()} for the service's help index. Not every connector
+has a help topic. For example, the \code{"tulli"} topic explains Uljas
+classifications, source filters, and selection defaults.
 }
 \examples{
 \dontrun{
-tosi_help()         # List available topics
-tosi_help("tulli")  # Read connector instructions
+# After setting up a trusted connection (see ?tosi_options):
+print(tosi_help())
+print(tosi_help("tulli"))
 }
 }
 \seealso{
-\link{remote_frontends} for retrieval and \code{\link[=tosi_metadata]{tosi_metadata()}} for table
-inspection.
+\code{\link[=tosi_options]{tosi_options()}} for connection setup, \code{\link[=tosi_data]{tosi_data()}} for retrieval,
+and \code{\link[=tosi_metadata]{tosi_metadata()}} for table inspection.
 }
