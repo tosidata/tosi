@@ -10,11 +10,19 @@ read-only; direct and nested replacement fails.
 
 ## Component inspection
 
-Use `$component(id)` for exact-ID lookup and `$domain_table(id)` for the
-complete domain. Each component also provides `$domain_table()` with the
-same return contract. `component$domain_size()` counts the stored
-primary domain vector without constructing a table: `NA_integer_` when
-unavailable, `0L` for a recorded empty domain.
+On a schema returned by
+[`tosi_schema()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+or attached to a [retrieved
+table](https://tosidata.github.io/tosi/reference/tosi_table.md), use
+`$component(id)` to look up a component and `$domain_table(id)` for its
+recorded domain. Each component also provides `$domain_table()` with the
+same return contract. Use `$column_names(col_mode)` to map component IDs
+to column names for a naming mode. This mapping does not describe the
+values in the cells.
+
+`component$domain_size()` counts the stored primary domain vector
+without constructing a table: `NA_integer_` when unavailable, `0L` for a
+recorded empty domain.
 
 Code domains may include `note` alongside `code` and `label`, with one
 note per code in the same order; missing entries and repeated notes are

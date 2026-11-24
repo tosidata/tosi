@@ -1,8 +1,10 @@
 # Configure your `tosi` options
 
-Set your service URL and access token before retrieving data. You can
-also choose your preferred languages. Settings apply to subsequent calls
-in the current R session.
+Before making requests, set a trusted service URL and your access token
+with `tosi_options()` or the `TOSI_URL` and `TOSI_TOKEN` environment
+variables. You can also choose your preferred languages. Settings made
+with `tosi_options()` apply to subsequent calls in the current R
+session.
 
 ## Usage
 

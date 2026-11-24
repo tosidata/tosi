@@ -1,5 +1,25 @@
 # Changelog
 
+## tosi 0.2.0
+
+- **Choose the language, column names, and dimension values
+  separately.** When retrieving data:
+  - `lang` chooses the language for labels, such as `"en"` for English
+    or `"fi"` for Finnish.
+  - `col_mode` controls column names: `"labels"` (default),
+    `"safe_labels"` for simplified names, or `"ids"` for component IDs.
+  - `domain_mode` controls the values in dimension columns: `"labels"`
+    (default) or `"codes"` for source codes where supported.
+
+  For example, `lang = "fi", domain_mode = "codes"` returns source codes
+  in the data while keeping Finnish labels in the schema, where
+  supported. `lang = "codes"` still requests coded values but does not
+  choose a language.
+- **List connectors with
+  [`tosi()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+  or `tosi(NULL)`.** `tosi("")` is treated as a search and errors
+  because there is no search term.
+
 ## tosi 0.1.4
 
 - Remove `tosi_index_document()` and `TosiIndexDocument`; use

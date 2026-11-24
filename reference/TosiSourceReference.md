@@ -4,11 +4,12 @@
 in
 [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
 results. It holds a labelled URI and optional description, not the
-document body. To retrieve a supported reference's text, use
-[`tosi_source_reference()`](https://tosidata.github.io/tosi/reference/remote_frontends.md),
-which returns a
+document body. Pass `$uri` to
+[`tosi_source_reference()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+for a `tosi://source-reference/` URI; the result is a
 [TosiSourceDocument](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md).
-Fields are read-only; direct and nested replacement fails.
+Open an external HTTP(S) URI as a link instead. Fields are read-only;
+direct and nested replacement fails.
 
 ## Active bindings
 

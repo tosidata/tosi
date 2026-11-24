@@ -1,35 +1,36 @@
 # Find and retrieve tables
 
-List connectors, find tables, and retrieve data from TosiData.
+List connectors, find tables, and retrieve data from TosiData. Set up a
+trusted service connection first; see
+[`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md).
 
-- `tosi()` is a smart, multipurpose tool for common tasks. See [Smart
-  queries with tosi()](#smart-queries-with-tosi-).
+- `tosi()` with no query lists available connectors and their IDs.
+
+- `tosi_catalog()` lists tables provided by one connector.
+
+- `tosi_search()` searches for tables across connector catalogs.
 
 - `tosi_data()` retrieves a table identified by a data path.
 
-- `tosi_catalog()` lists tables provided by a connector.
+- `tosi_url()` retrieves a table or catalog from a supported source URL.
 
-- `tosi_search()` searches for tables matching search terms.
+- `tosi_source_reference()` retrieves a supported source document.
 
-- `tosi_url()` retrieves a table or catalog from a URL recognized by a
-  connector.
-
-- `tosi_source_reference()` retrieves a referenced source document.
-
-For table descriptions, schemas, aggregation choices, and versions, see
-[`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md).
-For connector instructions, see
-[`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md).
+Catalogs and search results list objects, not observation rows. Use the
+selected entry's canonical `object_path` for
+[inspection](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+and retrieval.
 
 ## Usage
 
 ``` r
 tosi(
-  query,
+  query = NULL,
   source_filter = NULL,
   aggregation = NULL,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -39,6 +40,7 @@ tosi_data(
   aggregation = NULL,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -50,6 +52,7 @@ tosi_url(
   url,
   lang = NULL,
   col_mode = c("labels", "safe_labels", "ids"),
+  domain_mode = c("labels", "codes"),
   format = "tbl"
 )
 
@@ -61,7 +64,7 @@ tosi_source_reference(reference, lang = NULL)
 - query:
 
   A connector ID, data path, URL, source-reference path, or search
-  string. Omit it or use `""` to list available connectors.
+  string. Omit it or use `NULL` to list available connectors.
 
 - source_filter:
 
@@ -73,8 +76,8 @@ tosi_source_reference(reference, lang = NULL)
 - aggregation:
 
   Optional named list selecting source classifications or aggregation
-  levels by dimension. Use `tosi_aggregation_options(path)` to inspect
-  available choices. See
+  levels by dimension. On connectors that support it, use
+  `tosi_aggregation_options(path)` to inspect available choices. See
   [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
   for connector-specific instructions and examples.
 
@@ -96,21 +99,24 @@ tosi_source_reference(reference, lang = NULL)
 
   This changes column names, not the values in the columns.
 
+- domain_mode:
+
+  For data retrieval, `"labels"` (default) requests labels in dimension
+  cells, and `"codes"` requests source codes where supported. Unlike
+  `col_mode`, this changes cell values, not column names.
+
 - format:
 
-  Output format for data retrieval. Currently only `"tbl"` is supported,
-  returning a `tosi_table`.
+  Output format for data retrieval. Use `"tbl"` to get a
+  [tosi_table](https://tosidata.github.io/tosi/reference/tosi_table.md)
+  in R.
 
 - path:
 
   A data path beginning with a connector ID and `/`, followed by a
-  canonical object ID or a supported source identifier or path. Object
-  paths returned by catalogs and searches can be used directly.
-
-  For StatFin (PX), `"statfin/vaenn/14x2.px"` identifies a source table
-  whose canonical object path is `"statfin/vaenn_14x2_px"`. For ECB,
-  `"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"` selects a series from `"ecb/FM"`;
-  the part after `"FM."` is interpreted as `source_filter`.
+  canonical object ID or a supported source identifier or path. Use the
+  `object_path` returned by catalogs and searches directly for retrieval
+  and inspection.
 
 - connector_id:
 
@@ -118,8 +124,8 @@ tosi_source_reference(reference, lang = NULL)
 
 - prefix:
 
-  Restrict catalog entries to tables whose canonical object IDs start
-  with this prefix.
+  Keep catalog entries whose canonical object IDs start with this
+  prefix. Matching ignores case and does not search table titles.
 
 - search_string:
 
@@ -131,16 +137,16 @@ tosi_source_reference(reference, lang = NULL)
 
 - reference:
 
-  A connector/reference path or platform source-reference URI. Obtain a
-  source-document reference from the `uri` field of a source-reference
-  card in table metadata. External HTTP(S) references are website links,
-  not documents this endpoint retrieves.
+  A platform source-reference URI from a card's `$uri` in
+  `metadata$source_references`, or its `connector_id/reference_id` path.
+  Open external HTTP(S) references as links; `tosi_source_reference()`
+  does not fetch them.
 
 ## Value
 
 - `tosi()` returns one of the following, depending on `query`:
 
-  - No query or `""`: a `tosi_connector_catalog` tibble listing
+  - No query or `NULL`: a `tosi_connector_catalog` tibble listing
     connectors.
 
   - A connector ID, catalog prefix, or supported catalog URL: a
@@ -154,7 +160,10 @@ tosi_source_reference(reference, lang = NULL)
   - A source-reference path: a
     [TosiSourceDocument](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md).
 
-- `tosi_data()`: a `tosi_table`.
+- `tosi_data()`: a
+  [tosi_table](https://tosidata.github.io/tosi/reference/tosi_table.md),
+  a tibble with an embedded schema. Check its `result_scope` before
+  using the rows as complete data.
 
 - `tosi_url()`: a `tosi_table` or catalog result.
 
@@ -170,66 +179,81 @@ tosi_source_reference(reference, lang = NULL)
 
 ## Smart queries with tosi()
 
-`tosi()` combines browsing, search, and retrieval. What it does depends
-on what you supply as `query`:
+`tosi(query)` routes the query based on what you supply:
 
-- **No query:** `tosi()` or `tosi("")` lists available connectors and
-  their IDs.
+- **Connector ID:** `tosi("eurostat")` lists the connector's tables.
 
-- **Connector ID:** `tosi("eurostat")` lists the tables provided by the
-  Eurostat connector.
+- **Data path:** `tosi("eurostat/sdg_07_40")` retrieves the table's
+  data.
 
-- **Data path:** `tosi("eurostat/tps00001")` retrieves the table's data.
+- **Source URL:** a supported HTTP(S) URL can identify a table or a
+  catalog.
 
-- **Source URL:** `tosi(url)` identifies the connector and retrieves the
-  table identified by a supported HTTP(S) URL. A URL identifying a
-  connector or catalog prefix returns a table listing instead.
+- **Search terms:** `tosi("renewable energy")` searches connector
+  catalogs.
 
-- **Search terms:** `tosi("internet use")` searches for tables across
-  connector catalogs.
+- **Source-reference path:** `source-reference/<connector>/<reference>`
+  retrieves the referenced document, where supported.
 
-- **Source-reference path:** a path of the form
-  `source-reference/<connector>/<reference>` retrieves the referenced
-  document, where supported.
+Where a connector supports browsing by partial path, a path that matches
+a prefix but not an exact table returns a catalog, even if it lists only
+one table. Use `tosi_data()` when you need a table: an unresolved path
+raises an error rather than returning a catalog.
 
-Catalogs and search results contain a canonical `object_path` for each
-entry. Pass it as a data path to `tosi()` to retrieve the table's data.
+## Select observations
 
-Some connectors also support browsing by partial path. If the connector
-cannot identify an exact table, `tosi()` lists tables whose paths start
-with the supplied prefix. Even a single match is returned as a catalog,
-not data. Use `tosi_data()` when you require data: an unresolved path
-then raises an error instead of returning a catalog.
+`source_filter` selects source values, series, or rows. `aggregation`
+selects source-provided classifications or levels, not a calculation
+over the returned rows. See
+[`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
+for available connector instructions and
+[`tosi_aggregation_options()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+for supported choices. Pass the same selections to
+[`tosi_schema()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+to inspect the proposed request.
+
+For a source URL, use `tosi()` with `source_filter` or `aggregation` if
+you need explicit selections. `tosi_url()` does not take these
+arguments.
 
 ## Result language
 
-Use `lang` to select the result language, for example `lang = "en"` for
-English. This overrides any language specified in a source URL without
-changing your session preferences.
-
-When no explicit or URL language is supplied, TosiData uses the first
-available language in your
+For data retrieval, request one language, for example `lang = "en"` for
+English. An explicit language overrides a language indicated by a source
+URL without changing your session preferences. If neither is given,
+TosiData uses the first available language in your
 [`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md)
-preferences. If no preference is available, it uses the source's first
-language. The connector listing returned by `tosi()` shows the available
-languages.
+preferences, or the source's default. The connector listing shows
+languages for each connector, not necessarily for every table it
+provides.
+
+In `tosi_catalog()`, `lang = c("fi", "en")` keeps existing Finnish and
+English catalog labels, and `lang = "all_languages"` keeps all available
+labels. This does not request multiple copies of the table data. In
+`tosi_search()`, `lang` controls which labels are displayed, not which
+languages are searched.
 
 ## See also
 
 [`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md)
-for connection setup and session preferences.
+for connection setup,
+[`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
+for inspection, and
+[`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
+for available connector instructions.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# After configuring your connection with tosi_options():
-tosi()                               # List connectors
-tosi("statfin")                      # Browse tables
-tosi_data("statfin/vaenn/14x2.px")   # Retrieve a table by source path
-tosi_data("statfin/vaenn_14x2_px")   # Or by canonical object path
+# After setting up a trusted connection (see ?tosi_options):
+tosi()
+tosi_search("renewable energy", lang = "en")
+tosi_catalog("eurostat", prefix = "sdg_07_40", lang = "en")
 
-# Request English for this call only.
-tosi_data("statfin/vaenn_14x2_px", lang = "en")
+# Use the object_path of the catalog entry you want.
+path <- "eurostat/sdg_07_40"
+data <- tosi_data(path, lang = "en")
+attr(data, "result_scope")
 } # }
 ```

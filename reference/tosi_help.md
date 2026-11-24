@@ -1,30 +1,35 @@
 # Read connector help
 
-List available help topics or retrieve a connector-help article. For
-example, `tosi_help("tulli")` explains Uljas classifications, source
-filters, and selection defaults.
+Start with `tosi_help()` for the service's help index. Not every
+connector has a help topic. For example, the `"tulli"` topic explains
+Uljas classifications, source filters, and selection defaults.
 
 ## Usage
 
 ``` r
-tosi_help(topic)
+tosi_help(topic = NULL)
 ```
 
 ## Arguments
 
 - topic:
 
-  A help topic such as `"tulli"`; omit to list available topics.
+  A help topic from the index, such as `"tulli"`. Omit it or use
+  `"index"` to read the index.
 
 ## Value
 
 A [TosiHelp](https://tosidata.github.io/tosi/reference/TosiHelp.md)
-object containing English Markdown.
+object containing English Markdown. Use
+[`print()`](https://rdrr.io/r/base/print.html) to display it in a script
+or `$content` to access the text.
 
 ## See also
 
-[remote_frontends](https://tosidata.github.io/tosi/reference/remote_frontends.md)
-for retrieval and
+[`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md)
+for connection setup,
+[`tosi_data()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+for retrieval, and
 [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
 for table inspection.
 
@@ -32,7 +37,8 @@ for table inspection.
 
 ``` r
 if (FALSE) { # \dontrun{
-tosi_help()         # List available topics
-tosi_help("tulli")  # Read connector instructions
+# After setting up a trusted connection (see ?tosi_options):
+print(tosi_help())
+print(tosi_help("tulli"))
 } # }
 ```

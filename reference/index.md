@@ -1,5 +1,21 @@
 # Package index
 
+## Connect and get help
+
+- [`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md)
+  :
+
+  Configure your `tosi` options
+
+- [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
+  : Read connector help
+
+- [`TosiHelp`](https://tosidata.github.io/tosi/reference/TosiHelp.md) :
+  Connector help article
+
+- [`tosi_cache_clear()`](https://tosidata.github.io/tosi/reference/tosi_cache_clear.md)
+  : Clear cached table results
+
 ## Find and retrieve tables
 
 - [`tosi()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
@@ -10,24 +26,25 @@
   [`tosi_source_reference()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
   : Find and retrieve tables
 
-- [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
-  : Read connector help
-
-- [`tosi_options()`](https://tosidata.github.io/tosi/reference/tosi_options.md)
-  :
-
-  Configure your `tosi` options
-
-- [`tosi_cache_clear()`](https://tosidata.github.io/tosi/reference/tosi_cache_clear.md)
-  : Clear cached table results
-
-## Inspect table metadata and structure
+## Inspect metadata, structure and versions
 
 - [`tosi_schema()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
   [`tosi_metadata()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
   [`tosi_aggregation_options()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
   [`tosi_data_version()`](https://tosidata.github.io/tosi/reference/tosi_metadata.md)
   : Inspect table metadata and options
+- [`TosiMetadata`](https://tosidata.github.io/tosi/reference/TosiMetadata.md)
+  : Descriptive metadata
+- [`TosiDescriptionSection`](https://tosidata.github.io/tosi/reference/TosiDescriptionSection.md)
+  : Source-backed description section
+- [`TosiSourceReference`](https://tosidata.github.io/tosi/reference/TosiSourceReference.md)
+  : Source-reference card
+- [`TosiSourceDocument`](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md)
+  : Retrieved source document
+- [`TosiSchema`](https://tosidata.github.io/tosi/reference/TosiSchema.md)
+  : Source-bound table structure
+- [`TosiStructure`](https://tosidata.github.io/tosi/reference/TosiStructure.md)
+  : Source-independent table structure
 
 ## Work with tables and provenance
 
@@ -37,25 +54,8 @@
 - [`provenance()`](https://tosidata.github.io/tosi/reference/provenance.md)
   [`` `provenance<-`() ``](https://tosidata.github.io/tosi/reference/provenance.md)
   : Read or set provenance
-
-## Response objects
-
-- [`TosiHelp`](https://tosidata.github.io/tosi/reference/TosiHelp.md) :
-  Connector help article
-- [`TosiMetadata`](https://tosidata.github.io/tosi/reference/TosiMetadata.md)
-  : Descriptive metadata
-- [`TosiDescriptionSection`](https://tosidata.github.io/tosi/reference/TosiDescriptionSection.md)
-  : Source-backed description section
-- [`TosiSchema`](https://tosidata.github.io/tosi/reference/TosiSchema.md)
-  : Source-bound table structure
-- [`TosiStructure`](https://tosidata.github.io/tosi/reference/TosiStructure.md)
-  : Source-independent table structure
 - [`TosiProvenance`](https://tosidata.github.io/tosi/reference/TosiProvenance.md)
   : Provenance history
-- [`TosiSourceReference`](https://tosidata.github.io/tosi/reference/TosiSourceReference.md)
-  : Source-reference card
-- [`TosiSourceDocument`](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md)
-  : Retrieved source document
 
 ## Identifiers, frequencies and time ranges
 

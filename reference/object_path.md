@@ -1,12 +1,17 @@
 # Object paths
 
-`object_path()` identifies an object within a connector. Supply complete
-paths such as `"eurostat/tps00001"`, or supply connector IDs and object
-IDs separately to combine them. Each complete path has exactly one `/`
-between a canonical
+`object_path()` constructs a canonical object path. Supply a complete
+path such as `"example_connector/example_table"` (syntax only), or
+combine connector IDs and object IDs supplied separately. Each complete
+path has exactly one `/` between a canonical
 [`connector_id()`](https://tosidata.github.io/tosi/reference/id-vectors.md)
 and a canonical
 [`object_id()`](https://tosidata.github.io/tosi/reference/id-vectors.md).
+This does not check whether the object exists; use
+[`tosi_catalog()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+or
+[`tosi_search()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+to find objects.
 
 ## Usage
 

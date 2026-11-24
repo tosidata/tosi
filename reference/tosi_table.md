@@ -1,12 +1,8 @@
 # Retrieved tables
 
 A `tosi_table` is a tibble with a schema, title, source label,
-provenance, and `result_scope` stored as attributes.
-`result_scope = "complete"` means the table contains all rows for the
-normalized request, not necessarily every row in the source.
-`result_scope = "preview"` means the result is intentionally limited and
-may need a source filter for complete data. Result scope is not a table
-column or schema component.
+provenance, and `result_scope` stored as attributes. Check
+`attr(x, "result_scope")` before using the rows:
 
 ## Usage
 
@@ -44,10 +40,23 @@ metadata guarantee is made after conversion.
 
 ## Details
 
+- `"complete"`: all rows for the request as interpreted by the
+  connector, including filters and defaults. This does not necessarily
+  mean all rows in the source.
+
+- `"preview"`: intentionally limited rows. Refine the selection using
+  the available [connector
+  instructions](https://tosidata.github.io/tosi/reference/tosi_help.md)
+  and check the new result.
+
+Result scope is not a table column or schema component.
+
 `attr(x, "schema")` is a
-[TosiSchema](https://tosidata.github.io/tosi/reference/TosiSchema.md),
-directly usable through its inherited schema methods. It holds the sole
-canonical source identity and version through `$connector_id`,
-`$object_id`, and `$data_version`; these are not independently stored on
-the table. Metadata describes the result at delivery. Wrangling may
-alter or discard it.
+[TosiSchema](https://tosidata.github.io/tosi/reference/TosiSchema.md)
+with the delivered object's `$connector_id`, `$object_id`, and
+`$data_version`. See `names(x)` for the actual column names and
+[TosiStructure](https://tosidata.github.io/tosi/reference/TosiStructure.md)
+for mapping component IDs to names. Use
+[`provenance()`](https://tosidata.github.io/tosi/reference/provenance.md)
+for the result's history. These attributes describe the table as
+delivered; wrangling may alter or discard them.

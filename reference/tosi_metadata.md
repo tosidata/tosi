@@ -1,10 +1,16 @@
 # Inspect table metadata and options
 
-Inspect a table without retrieving its data. `tosi_metadata()` returns
-its descriptive metadata; `tosi_schema()` describes its structure and
-can apply `source_filter` and `aggregation` selections.
-`tosi_aggregation_options()` lists available aggregation choices by
-source dimension. `tosi_data_version()` checks the current version
+These functions return information about a table, not observation rows.
+`tosi_metadata()` describes the subject and source. `tosi_schema()`
+describes the structure, including the components and their available
+domains. Use the same `source_filter` and `aggregation` with
+`tosi_schema()` as for the planned data request.
+
+`tosi_aggregation_options()` lists source-provided choices where
+supported. Look for `TRUE` in the `aggregation_options` column of the
+connector listing from
+[`tosi()`](https://tosidata.github.io/tosi/reference/remote_frontends.md).
+`tosi_data_version()` checks the version reported by the connector
 independently of retrieval.
 
 ## Usage
@@ -24,13 +30,9 @@ tosi_data_version(path)
 - path:
 
   A data path beginning with a connector ID and `/`, followed by a
-  canonical object ID or a supported source identifier or path. Object
-  paths returned by catalogs and searches can be used directly.
-
-  For StatFin (PX), `"statfin/vaenn/14x2.px"` identifies a source table
-  whose canonical object path is `"statfin/vaenn_14x2_px"`. For ECB,
-  `"ecb/FM.B.U2.EUR.4F.KR.MLFR.LEV"` selects a series from `"ecb/FM"`;
-  the part after `"FM."` is interpreted as `source_filter`.
+  canonical object ID or a supported source identifier or path. Use the
+  `object_path` returned by catalogs and searches directly for retrieval
+  and inspection.
 
 - source_filter:
 
@@ -42,8 +44,8 @@ tosi_data_version(path)
 - aggregation:
 
   Optional named list selecting source classifications or aggregation
-  levels by dimension. Use `tosi_aggregation_options(path)` to inspect
-  available choices. See
+  levels by dimension. On connectors that support it, use
+  `tosi_aggregation_options(path)` to inspect available choices. See
   [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
   for connector-specific instructions and examples.
 
@@ -67,24 +69,29 @@ tosi_data_version(path)
 - `tosi_aggregation_options()`: a named list of available aggregation
   choices grouped by source dimension.
 
-- `tosi_data_version()`: a named `POSIXct` timestamp identifying the
-  current data version. Checking it does not fix a later retrieval's
-  version.
+- `tosi_data_version()`: a `POSIXct` timestamp named by the canonical
+  object path. It is not necessarily an uncached check and does not pin
+  a later retrieval. For the version actually delivered, use the schema
+  attached to the [returned
+  table](https://tosidata.github.io/tosi/reference/tosi_table.md).
 
 ## See also
 
-[remote_frontends](https://tosidata.github.io/tosi/reference/remote_frontends.md)
-for retrieval and result-language preferences, and
+[`tosi_data()`](https://tosidata.github.io/tosi/reference/remote_frontends.md)
+for retrieval and
 [`tosi_help()`](https://tosidata.github.io/tosi/reference/tosi_help.md)
-for connector-specific selection instructions.
+for available connector-specific selection instructions.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-tosi_metadata("statfin/vaenn_14x2_px")
-tosi_schema("statfin/vaenn_14x2_px", lang = "en")
-tosi_aggregation_options("statfin/vaenn_14x2_px")
-tosi_data_version("statfin/vaenn_14x2_px")
+# After setting up a trusted connection (see ?tosi_options):
+path <- "eurostat/sdg_07_40"
+metadata <- tosi_metadata(path, lang = "en")
+metadata$print(details = TRUE)
+schema <- tosi_schema(path, lang = "en")
+schema$components
+tosi_data_version(path)
 } # }
 ```

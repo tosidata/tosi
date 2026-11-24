@@ -57,11 +57,10 @@ compact reference cards, without retrieving the referenced documents.
 
 - `source_references`:
 
-  A
+  A list of
   [TosiSourceReference](https://tosidata.github.io/tosi/reference/TosiSourceReference.md)
-  card or list of cards, not retrieved
-  [TosiSourceDocument](https://tosidata.github.io/tosi/reference/TosiSourceDocument.md)
-  objects. A single card becomes a one-element list.
+  cards, empty if none are available. The cards contain links, not
+  document bodies.
 
 ## Methods
 
